@@ -3,8 +3,8 @@ import { Bookmark } from 'lucide-react'
 
 const Header = () => {
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container mx-auto px-4 flex h-16 items-center justify-end">
+    <header className="sticky top-0 z-10 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="px-4 flex h-16 items-center justify-end w-full">
         <div className="flex items-center gap-6">
           <Bookmark className="h-8 w-8 cursor-pointer hover:opacity-80 transition-opacity text-black fill-current" />
           <Avatar className="h-8 w-8 cursor-pointer hover:opacity-80 transition-opacity">

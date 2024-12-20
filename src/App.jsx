@@ -1,13 +1,13 @@
-import Header from './components/Header'
-import Layout from './components/Layout'
+import Sidebar from './components/Sidebar'
 import Spots from './components/spots'
 
 const App = () => {
   return (
     <>
-      <Layout>
+      <Sidebar />
+      <div className="ml-64">
         <Spots />
-      </Layout>
+      </div>
     </>
   )
 }

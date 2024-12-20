@@ -5,7 +5,7 @@ import { Slider } from '@/components/ui/slider'
 
 const Sidebar = () => {
   return (
-    <aside className="w-64 border-r h-screen fixed left-0 top-0">
+    <aside className="w-64 border-r h-screen fixed left-0 top-0 z-50 bg-white">
       {/* Logo */}
       <div className="p-4">
         <h1 className="text-4xl" style={{ fontFamily: "'Satisfy', cursive" }}>
