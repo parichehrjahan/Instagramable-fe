@@ -1,9 +1,13 @@
-import './App.css'
+import Header from './components/Header'
+import Layout from './components/Layout'
+import Spots from './components/spots'
 
 const App = () => {
   return (
     <>
-      <h1>Hello World</h1>
+      <Layout>
+        <Spots />
+      </Layout>
     </>
   )
 }
