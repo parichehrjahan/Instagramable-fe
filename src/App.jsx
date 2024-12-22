@@ -1,9 +1,15 @@
-import './App.css'
+import Sidebar from './components/Sidebar'
+import Spots from './components/spots'
 
 const App = () => {
   return (
     <>
-      <h1>Hello World</h1>
+      <Sidebar />
+      <div className="ml-64">
+        <Spots />
+        <Spots />
+        <Spots />
+      </div>
     </>
   )
 }
