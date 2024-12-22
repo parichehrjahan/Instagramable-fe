@@ -12,7 +12,6 @@ const Sidebar = () => {
           Instagramable
         </h1>
       </div>
-
       {/* Sidebar Content */}
       <div className="p-4 space-y-6">
         {/* Search Location */}

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router'
 import { Card } from '@/components/ui/card'
 import { ThumbsUp, ThumbsDown, Star } from 'lucide-react'
 import topicGoldenGateBridge from '../assets/topic-golden-gate-bridge.jpg'
@@ -6,7 +7,9 @@ import topicGoldenGateBridge2 from '../assets/goldengate2.jpg'
 import topicGoldenGateBridge3 from '../assets/topic-golden-gate-bridge3.jpg'
 
 const Spots = () => {
+  const navigate = useNavigate()
   const spot = {
+    id: 1,
     name: 'Golden Gate Bridge',
     images: [
       topicGoldenGateBridge,
@@ -31,20 +34,29 @@ const Spots = () => {
     return () => clearInterval(timer)
   }, [spot.images.length])
 
-  const handleLike = () => {
+  const handleLike = (e) => {
+    e.stopPropagation() // Prevent event bubbling
     setIsLiked(!isLiked)
     if (isDisliked) setIsDisliked(false)
   }
 
-  const handleDislike = () => {
+  const handleDislike = (e) => {
+    e.stopPropagation() // Prevent event bubbling
     setIsDisliked(!isDisliked)
     if (isLiked) setIsLiked(false)
   }
 
+  const handleSpotClick = () => {
+    navigate(`/spot/${spot.id}`)
+  }
+
   return (
     <Card className="overflow-hidden rounded-lg">
-      {/* Image Gallery */}
-      <div className="relative h-[400px] bg-muted">
+      {/* Image Gallery - Clickable */}
+      <div
+        className="relative h-[400px] bg-muted cursor-pointer"
+        onClick={handleSpotClick}
+      >
         <div className="absolute inset-0 transition-opacity duration-500">
           <img
             src={spot.images[currentImageIndex]}
@@ -61,7 +73,10 @@ const Spots = () => {
               className={`w-2 h-2 rounded-full transition-colors ${
                 index === currentImageIndex ? 'bg-white' : 'bg-white/50'
               }`}
-              onClick={() => setCurrentImageIndex(index)}
+              onClick={(e) => {
+                e.stopPropagation() // Prevent navigation when clicking dots
+                setCurrentImageIndex(index)
+              }}
             />
           ))}
         </div>
@@ -70,9 +85,15 @@ const Spots = () => {
       {/* Location Info, Like/Dislike, and Reviews */}
       <div className="p-4">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-xl font-semibold">{spot.name}</h3>
+          {/* Name - Clickable */}
+          <h3
+            className="text-xl font-semibold cursor-pointer hover:text-blue-500"
+            onClick={handleSpotClick}
+          >
+            {spot.name}
+          </h3>
 
-          {/* Like/Dislike */}
+          {/* Like/Dislike - Not clickable for navigation */}
           <div className="flex gap-16">
             <button
               onClick={handleLike}
