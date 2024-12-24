@@ -7,8 +7,6 @@ const App = () => {
       <Sidebar />
       <div className="ml-64">
         <Spots />
-        <Spots />
-        <Spots />
       </div>
     </>
   )

@@ -2,46 +2,59 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router'
 import { Card } from '@/components/ui/card'
 import { ThumbsUp, ThumbsDown, Star } from 'lucide-react'
-import topicGoldenGateBridge from '../assets/topic-golden-gate-bridge.jpg'
-import topicGoldenGateBridge2 from '../assets/goldengate2.jpg'
-import topicGoldenGateBridge3 from '../assets/topic-golden-gate-bridge3.jpg'
+import { getSpots } from '@/services/api'
 
 const Spots = () => {
   const navigate = useNavigate()
-  const spot = {
-    id: 1,
-    name: 'Golden Gate Bridge',
-    images: [
-      topicGoldenGateBridge,
-      topicGoldenGateBridge2,
-      topicGoldenGateBridge3,
-    ],
-    rating: 4,
-  }
+  const [spots, setSpots] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
-  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  useEffect(() => {
+    const fetchSpots = async () => {
+      try {
+        const response = await getSpots()
+        if (response.success) {
+          setSpots(response.data)
+        } else {
+          setError('Failed to fetch spots')
+        }
+      } catch (err) {
+        setError(err.message)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchSpots()
+  }, [])
+
+  if (loading) return <div>Loading spots...</div>
+  if (error) return <div>Error: {error}</div>
+
+  return (
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+      {spots.map((spot) => (
+        <SpotCard key={spot.id} spot={spot} />
+      ))}
+    </div>
+  )
+}
+
+// Separate SpotCard component for better organization
+const SpotCard = ({ spot }) => {
+  const navigate = useNavigate()
   const [isLiked, setIsLiked] = useState(false)
   const [isDisliked, setIsDisliked] = useState(false)
 
-  // Auto-rotate images
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentImageIndex((prevIndex) =>
-        prevIndex === spot.images.length - 1 ? 0 : prevIndex + 1
-      )
-    }, 4000) // Change image every 4 seconds
-
-    return () => clearInterval(timer)
-  }, [spot.images.length])
-
   const handleLike = (e) => {
-    e.stopPropagation() // Prevent event bubbling
+    e.stopPropagation()
     setIsLiked(!isLiked)
     if (isDisliked) setIsDisliked(false)
   }
 
   const handleDislike = (e) => {
-    e.stopPropagation() // Prevent event bubbling
+    e.stopPropagation()
     setIsDisliked(!isDisliked)
     if (isLiked) setIsLiked(false)
   }
@@ -52,40 +65,19 @@ const Spots = () => {
 
   return (
     <Card className="overflow-hidden rounded-lg">
-      {/* Image Gallery - Clickable */}
       <div
         className="relative h-[400px] bg-muted cursor-pointer"
         onClick={handleSpotClick}
       >
-        <div className="absolute inset-0 transition-opacity duration-500">
-          <img
-            src={spot.images[currentImageIndex]}
-            alt={spot.name}
-            className="w-full h-full object-cover"
-          />
-        </div>
-
-        {/* Image Navigation Dots */}
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
-          {spot.images.map((_, index) => (
-            <button
-              key={index}
-              className={`w-2 h-2 rounded-full transition-colors ${
-                index === currentImageIndex ? 'bg-white' : 'bg-white/50'
-              }`}
-              onClick={(e) => {
-                e.stopPropagation() // Prevent navigation when clicking dots
-                setCurrentImageIndex(index)
-              }}
-            />
-          ))}
-        </div>
+        <img
+          src={spot.image_url || '/placeholder-image.jpg'}
+          alt={spot.name}
+          className="w-full h-full object-cover"
+        />
       </div>
 
-      {/* Location Info, Like/Dislike, and Reviews */}
       <div className="p-4">
         <div className="flex items-center justify-between mb-2">
-          {/* Name - Clickable */}
           <h3
             className="text-xl font-semibold cursor-pointer hover:text-blue-500"
             onClick={handleSpotClick}
@@ -93,7 +85,6 @@ const Spots = () => {
             {spot.name}
           </h3>
 
-          {/* Like/Dislike - Not clickable for navigation */}
           <div className="flex gap-16">
             <button
               onClick={handleLike}
@@ -120,20 +111,6 @@ const Spots = () => {
                 }`}
               />
             </button>
-          </div>
-
-          {/* Reviews */}
-          <div className="flex items-center gap-1">
-            {[...Array(5)].map((_, index) => (
-              <Star
-                key={index}
-                className={`h-5 w-5 ${
-                  index < spot.rating
-                    ? 'text-yellow-400 fill-current'
-                    : 'text-gray-300'
-                }`}
-              />
-            ))}
           </div>
         </div>
       </div>
