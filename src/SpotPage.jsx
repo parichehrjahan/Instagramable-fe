@@ -2,68 +2,93 @@ import { useParams } from 'react-router'
 import { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import { Star, Plus } from 'lucide-react'
-import topicGoldenGateBridge from './assets/topic-golden-gate-bridge.jpg'
-import topicGoldenGateBridge2 from './assets/goldengate2.jpg'
-import topicGoldenGateBridge3 from './assets/topic-golden-gate-bridge3.jpg'
+import { getSpotById } from '@/services/api'
 
 const SpotPage = () => {
   const { id } = useParams()
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [spot, setSpot] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
-  // Mock data (in real app, fetch this based on id)
-  const spot = {
-    id,
-    name: 'Golden Gate Bridge',
-    address: '123 Golden Gate Bridge, San Francisco, CA',
-    description: 'An iconic suspension bridge spanning the Golden Gate strait.',
-    images: [
-      topicGoldenGateBridge,
-      topicGoldenGateBridge2,
-      topicGoldenGateBridge3,
-    ],
-    rating: 4,
-  }
+  // Fetch spot data
+  useEffect(() => {
+    const fetchSpot = async () => {
+      try {
+        const response = await getSpotById(id)
+        if (response.success) {
+          setSpot(response.data)
+        } else {
+          setError('Failed to fetch spot details')
+        }
+      } catch (err) {
+        setError(err.message)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchSpot()
+  }, [id])
 
   // Auto-rotate images
   useEffect(() => {
+    if (!spot?.image_urls?.length) return
+
     const timer = setInterval(() => {
       setCurrentImageIndex((prevIndex) =>
-        prevIndex === spot.images.length - 1 ? 0 : prevIndex + 1
+        prevIndex === spot.image_urls.length - 1 ? 0 : prevIndex + 1
       )
     }, 4000)
 
     return () => clearInterval(timer)
-  }, [spot.images.length])
+  }, [spot?.image_urls?.length])
 
   const handleReviewClick = () => {
     // TODO: Implement review modal/popup
     console.log('Open review modal')
   }
 
+  if (loading) return <div className="flex justify-center p-8">Loading...</div>
+  if (error)
+    return (
+      <div className="flex justify-center p-8 text-red-500">Error: {error}</div>
+    )
+  if (!spot)
+    return <div className="flex justify-center p-8">Spot not found</div>
+
   return (
     <div className="max-w-4xl mx-auto p-4">
       {/* Image Gallery */}
       <div className="relative h-[400px] bg-muted rounded-lg mb-6">
-        <div className="absolute inset-0 transition-opacity duration-500">
-          <img
-            src={spot.images[currentImageIndex]}
-            alt={spot.name}
-            className="w-full h-full object-cover rounded-lg"
-          />
-        </div>
+        {spot.image_urls && spot.image_urls.length > 0 ? (
+          <>
+            <div className="absolute inset-0 transition-opacity duration-500">
+              <img
+                src={spot.image_urls[currentImageIndex]}
+                alt={spot.name}
+                className="w-full h-full object-cover rounded-lg"
+              />
+            </div>
 
-        {/* Image Navigation Dots */}
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
-          {spot.images.map((_, index) => (
-            <button
-              key={index}
-              className={`w-2 h-2 rounded-full transition-colors ${
-                index === currentImageIndex ? 'bg-white' : 'bg-white/50'
-              }`}
-              onClick={() => setCurrentImageIndex(index)}
-            />
-          ))}
-        </div>
+            {/* Image Navigation Dots */}
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
+              {spot.image_urls.map((_, index) => (
+                <button
+                  key={index}
+                  className={`w-2 h-2 rounded-full transition-colors ${
+                    index === currentImageIndex ? 'bg-white' : 'bg-white/50'
+                  }`}
+                  onClick={() => setCurrentImageIndex(index)}
+                />
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="flex items-center justify-center h-full">
+            <p className="text-gray-500">No images available</p>
+          </div>
+        )}
       </div>
 
       {/* Spot Details */}
@@ -80,7 +105,7 @@ const SpotPage = () => {
                 <Star
                   key={index}
                   className={`h-5 w-5 ${
-                    index < spot.rating
+                    index < (spot.srating || 0)
                       ? 'text-yellow-400 fill-current'
                       : 'text-gray-300'
                   }`}

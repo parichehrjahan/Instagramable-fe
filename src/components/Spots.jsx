@@ -1,11 +1,96 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router'
 import { Card } from '@/components/ui/card'
-import { ThumbsUp, ThumbsDown, Star } from 'lucide-react'
+import {
+  ThumbsUp,
+  ThumbsDown,
+  Star,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react'
 import { getSpots } from '@/services/api'
 
-const Spots = () => {
+const ImageCarousel = ({ images }) => {
+  const [currentImage, setCurrentImage] = useState(0)
+
+  const nextImage = (e) => {
+    e.stopPropagation()
+    setCurrentImage((prev) => (prev + 1) % images.length)
+  }
+
+  const prevImage = (e) => {
+    e.stopPropagation()
+    setCurrentImage((prev) => (prev - 1 + images.length) % images.length)
+  }
+
+  return (
+    <div className="relative h-[400px] bg-muted">
+      <img
+        src={images[currentImage]}
+        alt="Spot"
+        className="w-full h-full object-cover"
+      />
+      {images.length > 1 && (
+        <>
+          <button
+            onClick={prevImage}
+            className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 text-white"
+          >
+            <ChevronLeft className="h-6 w-6" />
+          </button>
+          <button
+            onClick={nextImage}
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 text-white"
+          >
+            <ChevronRight className="h-6 w-6" />
+          </button>
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+            {images.map((_, idx) => (
+              <div
+                key={idx}
+                className={`w-2 h-2 rounded-full ${
+                  currentImage === idx ? 'bg-white' : 'bg-white/50'
+                }`}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+const SpotCard = ({ spot }) => {
   const navigate = useNavigate()
+
+  return (
+    <Card
+      className="overflow-hidden rounded-lg cursor-pointer"
+      onClick={() => navigate(`/spot/${spot.id}`)}
+    >
+      <ImageCarousel images={spot.image_urls} />
+      <div className="p-4">
+        <h3 className="text-xl font-semibold mb-1">{spot.name}</h3>
+        <p className="text-sm text-gray-500 mb-2">{spot.address}</p>
+        <p className="text-sm text-gray-600 line-clamp-2">{spot.description}</p>
+        <div className="flex items-center mt-2">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <Star
+              key={star}
+              className={`h-5 w-5 ${
+                star <= spot.rating
+                  ? 'text-yellow-400 fill-current'
+                  : 'text-gray-300'
+              }`}
+            />
+          ))}
+        </div>
+      </div>
+    </Card>
+  )
+}
+
+const Spots = () => {
   const [spots, setSpots] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -29,92 +114,19 @@ const Spots = () => {
     fetchSpots()
   }, [])
 
-  if (loading) return <div>Loading spots...</div>
-  if (error) return <div>Error: {error}</div>
+  if (loading)
+    return <div className="flex justify-center p-8">Loading spots...</div>
+  if (error)
+    return (
+      <div className="flex justify-center p-8 text-red-500">Error: {error}</div>
+    )
 
   return (
-    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
       {spots.map((spot) => (
         <SpotCard key={spot.id} spot={spot} />
       ))}
     </div>
-  )
-}
-
-// Separate SpotCard component for better organization
-const SpotCard = ({ spot }) => {
-  const navigate = useNavigate()
-  const [isLiked, setIsLiked] = useState(false)
-  const [isDisliked, setIsDisliked] = useState(false)
-
-  const handleLike = (e) => {
-    e.stopPropagation()
-    setIsLiked(!isLiked)
-    if (isDisliked) setIsDisliked(false)
-  }
-
-  const handleDislike = (e) => {
-    e.stopPropagation()
-    setIsDisliked(!isDisliked)
-    if (isLiked) setIsLiked(false)
-  }
-
-  const handleSpotClick = () => {
-    navigate(`/spot/${spot.id}`)
-  }
-
-  return (
-    <Card className="overflow-hidden rounded-lg">
-      <div
-        className="relative h-[400px] bg-muted cursor-pointer"
-        onClick={handleSpotClick}
-      >
-        <img
-          src={spot.image_url || '/placeholder-image.jpg'}
-          alt={spot.name}
-          className="w-full h-full object-cover"
-        />
-      </div>
-
-      <div className="p-4">
-        <div className="flex items-center justify-between mb-2">
-          <h3
-            className="text-xl font-semibold cursor-pointer hover:text-blue-500"
-            onClick={handleSpotClick}
-          >
-            {spot.name}
-          </h3>
-
-          <div className="flex gap-16">
-            <button
-              onClick={handleLike}
-              className="p-2 rounded-full bg-green-100"
-            >
-              <ThumbsUp
-                className={`h-6 w-6 transition-colors ${
-                  isLiked
-                    ? 'text-green-500 fill-current'
-                    : 'text-gray-400 hover:text-green-500'
-                }`}
-              />
-            </button>
-
-            <button
-              onClick={handleDislike}
-              className="p-2 rounded-full bg-red-100"
-            >
-              <ThumbsDown
-                className={`h-6 w-6 transition-colors ${
-                  isDisliked
-                    ? 'text-red-500 fill-current'
-                    : 'text-gray-400 hover:text-red-500'
-                }`}
-              />
-            </button>
-          </div>
-        </div>
-      </div>
-    </Card>
   )
 }
 
