@@ -11,6 +11,14 @@ import {
 import { getSpots } from '@/services/api'
 
 const ImageCarousel = ({ images }) => {
+  if (!images || images.length === 0) {
+    return (
+      <div className="relative h-[400px] bg-muted flex items-center justify-center">
+        <p>No images available</p>
+      </div>
+    )
+  }
+
   const [currentImage, setCurrentImage] = useState(0)
 
   const nextImage = (e) => {

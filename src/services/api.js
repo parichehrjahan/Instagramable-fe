@@ -22,3 +22,29 @@ export const getSpotById = async (id) => {
     throw error
   }
 }
+
+export const createReview = async (reviewData) => {
+  try {
+    const response = await fetch(`${API_URL}/reviews`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(reviewData),
+    })
+    return await response.json()
+  } catch (error) {
+    console.error('Error creating review:', error)
+    throw error
+  }
+}
+
+export const getReviewsBySpotId = async (spotId) => {
+  try {
+    const response = await fetch(`${API_URL}/reviews/spot/${spotId}`)
+    return await response.json()
+  } catch (error) {
+    console.error('Error fetching reviews:', error)
+    throw error
+  }
+}

@@ -2,7 +2,8 @@ import { useParams } from 'react-router'
 import { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import { Star, Plus } from 'lucide-react'
-import { getSpotById } from '@/services/api'
+import { getSpotById, getReviewsBySpotId } from '@/services/api'
+import ReviewForm from '@/components/ReviewForm'
 
 const SpotPage = () => {
   const { id } = useParams()
@@ -10,6 +11,7 @@ const SpotPage = () => {
   const [spot, setSpot] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [reviews, setReviews] = useState([])
 
   // Fetch spot data
   useEffect(() => {
@@ -31,6 +33,24 @@ const SpotPage = () => {
     fetchSpot()
   }, [id])
 
+  // New useEffect for reviews
+  useEffect(() => {
+    const fetchReviews = async () => {
+      try {
+        const response = await getReviewsBySpotId(id)
+        if (response.success) {
+          setReviews(response.data)
+        }
+      } catch (error) {
+        console.error('Error fetching reviews:', error)
+      }
+    }
+
+    if (id) {
+      fetchReviews()
+    }
+  }, [id])
+
   // Auto-rotate images
   useEffect(() => {
     if (!spot?.image_urls?.length) return
@@ -47,6 +67,10 @@ const SpotPage = () => {
   const handleReviewClick = () => {
     // TODO: Implement review modal/popup
     console.log('Open review modal')
+  }
+
+  const handleReviewSubmitted = (newReview) => {
+    setReviews((prev) => [newReview, ...prev])
   }
 
   if (loading) return <div className="flex justify-center p-8">Loading...</div>
@@ -144,14 +168,39 @@ const SpotPage = () => {
         </div>
 
         {/* Reviews Section */}
-        <div>
-          <h2 className="font-semibold mb-4">Reviews</h2>
-          {/* Reviews will go here */}
-          <div className="space-y-4">
-            {/* Placeholder for reviews */}
-            <Card className="p-4">
-              <p className="text-gray-600">No reviews yet</p>
-            </Card>
+        <div className="mt-8">
+          <ReviewForm spotId={id} onReviewSubmitted={handleReviewSubmitted} />
+
+          <div className="mt-6">
+            <h2 className="font-semibold mb-4">Reviews</h2>
+            <div className="space-y-4">
+              {reviews.length === 0 ? (
+                <Card className="p-4">
+                  <p className="text-muted-foreground">No reviews yet</p>
+                </Card>
+              ) : (
+                reviews.map((review) => (
+                  <Card key={review.id} className="p-4">
+                    <div className="flex items-center gap-1 mb-2">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                          key={star}
+                          className={`h-4 w-4 ${
+                            star <= review.rating
+                              ? 'fill-yellow-400 text-yellow-400'
+                              : 'text-muted-foreground'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <p>{review.content}</p>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      {new Date(review.created_at).toLocaleDateString()}
+                    </p>
+                  </Card>
+                ))
+              )}
+            </div>
           </div>
         </div>
       </div>

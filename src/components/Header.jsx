@@ -7,9 +7,13 @@ const Header = () => {
       <div className="px-4 flex h-16 items-center justify-between w-full">
         {/* Logo */}
         <div className="p-4">
-          <h1 className="text-4xl" style={{ fontFamily: "'Satisfy', cursive" }}>
+          <a
+            href="/"
+            className="text-4xl"
+            style={{ fontFamily: "'Satisfy', cursive" }}
+          >
             Instagramable
-          </h1>
+          </a>
         </div>
         <div className="flex items-center gap-6">
           <Bookmark className="h-8 w-8 cursor-pointer hover:opacity-80 transition-opacity text-black fill-current" />
