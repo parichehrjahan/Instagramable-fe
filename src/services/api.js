@@ -48,3 +48,32 @@ export const getReviewsBySpotId = async (spotId) => {
     throw error
   }
 }
+
+export const toggleStoredSpot = async (spotId, isLiked) => {
+  try {
+    const response = await fetch(`${API_URL}/stored-spots`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        spot_id: spotId,
+        is_liked: isLiked,
+      }),
+    })
+    return await response.json()
+  } catch (error) {
+    console.error('Error toggling stored spot:', error)
+    throw error
+  }
+}
+
+export const getStoredSpotStatus = async (spotId) => {
+  try {
+    const response = await fetch(`${API_URL}/stored-spots/${spotId}`)
+    return await response.json()
+  } catch (error) {
+    console.error('Error getting stored spot status:', error)
+    throw error
+  }
+}

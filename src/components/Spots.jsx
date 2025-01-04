@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router'
 import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import {
   ThumbsUp,
   ThumbsDown,
@@ -8,7 +9,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react'
-import { getSpots } from '@/services/api'
+import { getSpots, toggleStoredSpot, getStoredSpotStatus } from '@/services/api'
 
 const ImageCarousel = ({ images }) => {
   if (!images || images.length === 0) {
@@ -70,6 +71,58 @@ const ImageCarousel = ({ images }) => {
 
 const SpotCard = ({ spot }) => {
   const navigate = useNavigate()
+  const [storedStatus, setStoredStatus] = useState({
+    isLiked: null,
+    isDisliked: null,
+  })
+
+  useEffect(() => {
+    const fetchStoredStatus = async () => {
+      try {
+        const response = await getStoredSpotStatus(spot.id)
+        if (response.success) {
+          setStoredStatus({
+            isLiked: response.data?.is_liked === true,
+            isDisliked: response.data?.is_liked === false,
+          })
+        }
+      } catch (error) {
+        console.error('Error fetching stored status:', error)
+      }
+    }
+
+    fetchStoredStatus()
+  }, [spot.id])
+
+  const handleStoredSpotToggle = async (e, isLiked) => {
+    e.stopPropagation() // Prevent navigation when clicking the buttons
+    try {
+      const shouldRemove =
+        (isLiked && storedStatus.isLiked) ||
+        (!isLiked && storedStatus.isDisliked)
+
+      const response = await toggleStoredSpot(
+        spot.id,
+        shouldRemove ? null : isLiked
+      )
+
+      if (response.success) {
+        if (shouldRemove) {
+          setStoredStatus({
+            isLiked: null,
+            isDisliked: null,
+          })
+        } else {
+          setStoredStatus({
+            isLiked: isLiked === true ? true : null,
+            isDisliked: isLiked === false ? true : null,
+          })
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling stored spot:', error)
+    }
+  }
 
   return (
     <Card
@@ -78,7 +131,43 @@ const SpotCard = ({ spot }) => {
     >
       <ImageCarousel images={spot.image_urls} />
       <div className="p-4">
-        <h3 className="text-xl font-semibold mb-1">{spot.name}</h3>
+        <div className="flex justify-between items-start mb-2">
+          <h3 className="text-xl font-semibold">{spot.name}</h3>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => handleStoredSpotToggle(e, true)}
+              className={`${
+                storedStatus.isLiked
+                  ? 'bg-green-500 hover:bg-green-600 border-green-500'
+                  : 'hover:bg-green-100'
+              }`}
+            >
+              <ThumbsUp
+                className={`h-4 w-4 ${
+                  storedStatus.isLiked ? 'text-white' : 'text-green-500'
+                }`}
+              />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => handleStoredSpotToggle(e, false)}
+              className={`${
+                storedStatus.isDisliked
+                  ? 'bg-red-500 hover:bg-red-600 border-red-500'
+                  : 'hover:bg-red-100'
+              }`}
+            >
+              <ThumbsDown
+                className={`h-4 w-4 ${
+                  storedStatus.isDisliked ? 'text-white' : 'text-red-500'
+                }`}
+              />
+            </Button>
+          </div>
+        </div>
         <p className="text-sm text-gray-500 mb-2">{spot.address}</p>
         <p className="text-sm text-gray-600 line-clamp-2">{spot.description}</p>
         <div className="flex items-center mt-2">

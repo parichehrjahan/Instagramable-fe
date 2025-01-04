@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react'
-import { getDB } from '../lib/utils'
+import supabase from '../lib/supabaseClient'
 
 const UserContext = createContext({})
 
@@ -8,7 +8,6 @@ export function UserProvider({ children }) {
   const [user, setUser] = useState(null)
   const [session, setSession] = useState(null)
   const [loading, setLoading] = useState(true)
-  const supabase = getDB()
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {

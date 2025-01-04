@@ -3,7 +3,7 @@ import Header from './Header'
 import { Auth } from '@supabase/auth-ui-react'
 import { ThemeSupa } from '@supabase/auth-ui-shared'
 import { useUser } from '../contexts/UserContext'
-import { getDB } from '../lib/utils'
+import supabase from '../lib/supabaseClient'
 
 const Layout = () => {
   const { session } = useUser()
@@ -11,7 +11,7 @@ const Layout = () => {
   if (!session) {
     return (
       <div className="mx-auto w-full max-w-2xl mt-[50vh] -translate-y-1/2">
-        <Auth supabaseClient={getDB()} appearance={{ theme: ThemeSupa }} />
+        <Auth supabaseClient={supabase} appearance={{ theme: ThemeSupa }} />
       </div>
     )
   }
