@@ -8,6 +8,7 @@ import {
   getCurrentUserStoredSpots,
   toggleSavedSpot,
 } from '@/services/api'
+import Sidebar from './sidebar'
 
 const ImageCarousel = ({ images }) => {
   if (!images || images.length === 0) {
@@ -131,6 +132,7 @@ const SpotCard = ({ spot, savedSpotIds, onSaveToggle }) => {
 
 const Spots = () => {
   const [spots, setSpots] = useState([])
+  const [filteredSpots, setFilteredSpots] = useState([])
   const [savedSpotIds, setSavedSpotIds] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -169,6 +171,58 @@ const Spots = () => {
     )
   }
 
+  const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371 // Earth's radius in km
+    const dLat = ((lat2 - lat1) * Math.PI) / 180
+    const dLon = ((lon2 - lon1) * Math.PI) / 180
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2)
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+    return R * c
+  }
+
+  const handleFilterChange = ({
+    location,
+    distance,
+    categories,
+    userLocation,
+  }) => {
+    let filtered = [...spots]
+
+    // Filter by location search
+    if (location) {
+      filtered = filtered.filter((spot) =>
+        spot.address.toLowerCase().includes(location.toLowerCase())
+      )
+    }
+
+    // Filter by distance if user location is available
+    if (userLocation && distance) {
+      filtered = filtered.filter((spot) => {
+        const spotDistance = calculateDistance(
+          userLocation.lat,
+          userLocation.lng,
+          spot.latitude,
+          spot.longitude
+        )
+        return spotDistance <= distance
+      })
+    }
+
+    // Filter by categories
+    if (categories.length > 0) {
+      filtered = filtered.filter((spot) =>
+        categories.some((category) => spot.categories.includes(category))
+      )
+    }
+
+    setFilteredSpots(filtered)
+  }
+
   if (loading)
     return <div className="flex justify-center p-8">Loading spots...</div>
   if (error)
@@ -177,15 +231,20 @@ const Spots = () => {
     )
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
-      {spots.map((spot) => (
-        <SpotCard
-          key={spot.id}
-          spot={spot}
-          savedSpotIds={savedSpotIds}
-          onSaveToggle={handleSaveToggle}
-        />
-      ))}
+    <div className="flex">
+      <Sidebar onFilterChange={handleFilterChange} />
+      <div className="flex-1">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
+          {(filteredSpots.length > 0 ? filteredSpots : spots).map((spot) => (
+            <SpotCard
+              key={spot.id}
+              spot={spot}
+              savedSpotIds={savedSpotIds}
+              onSaveToggle={handleSaveToggle}
+            />
+          ))}
+        </div>
+      </div>
     </div>
   )
 }

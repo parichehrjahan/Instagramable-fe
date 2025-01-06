@@ -2,50 +2,110 @@ import { Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
+import { useState, useCallback } from 'react'
+import { useJsApiLoader, Autocomplete } from '@react-google-maps/api'
+
+// Define libraries outside component to prevent re-renders
+const libraries = ['places']
 
 const Sidebar = () => {
+  const [selectedCategories, setSelectedCategories] = useState([])
+  const [distance, setDistance] = useState(50)
+  const [location, setLocation] = useState(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [loadError, setLoadError] = useState(null)
+
+  const { isLoaded, loadError: apiLoadError } = useJsApiLoader({
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+    libraries,
+  })
+
+  const onPlaceChanged = useCallback(() => {
+    const place = autocomplete.getPlace()
+    if (place.geometry) {
+      setLocation({
+        lat: place.geometry.location.lat(),
+        lng: place.geometry.location.lng(),
+        address: place.formatted_address,
+      })
+      setSearchQuery(place.formatted_address)
+    }
+  }, [])
+
+  if (apiLoadError) {
+    setLoadError('Failed to load Google Maps')
+  }
+
+  const toggleCategory = (category) => {
+    setSelectedCategories((prev) =>
+      prev.includes(category)
+        ? prev.filter((c) => c !== category)
+        : [...prev, category]
+    )
+  }
+
   return (
     <aside className="w-64 border-r h-screen fixed left-0 top-0 z-50 bg-white">
-      {/* Logo */}
       <div className="p-4">
         <h1 className="text-4xl" style={{ fontFamily: "'Satisfy', cursive" }}>
           Instagramable
         </h1>
       </div>
-      {/* Sidebar Content */}
       <div className="p-4 space-y-6">
-        {/* Search Location */}
         <div className="space-y-2">
           <h3 className="text-lg font-semibold">Location</h3>
           <div className="relative">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search location..." className="pl-8" />
+            {isLoaded ? (
+              <Autocomplete onPlaceChanged={onPlaceChanged}>
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search location..."
+                  className="pl-8"
+                />
+              </Autocomplete>
+            ) : (
+              <Input disabled placeholder="Loading..." className="pl-8" />
+            )}
+          </div>
+          {loadError && <div className="text-sm text-red-500">{loadError}</div>}
+          {location && (
+            <div className="text-sm text-muted-foreground">
+              Selected: {location.address}
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <h3 className="text-lg font-semibold">Distance</h3>
+          <Slider
+            defaultValue={[distance]}
+            max={100}
+            step={1}
+            className="py-4"
+            onValueChange={([value]) => setDistance(value)}
+          />
+          <div className="text-sm text-muted-foreground">
+            Within {distance} km
           </div>
         </div>
 
-        {/* Distance Slider */}
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold">Distance</h3>
-          <Slider defaultValue={[50]} max={100} step={1} className="py-4" />
-          <div className="text-sm text-muted-foreground">Within 50 km</div>
-        </div>
-
-        {/* Categories */}
         <div className="space-y-2">
           <h3 className="text-lg font-semibold">Categories</h3>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" className="rounded-full">
-              Luxury
-            </Button>
-            <Button variant="outline" className="rounded-full">
-              Nature
-            </Button>
-            <Button variant="outline" className="rounded-full">
-              Beach
-            </Button>
-            <Button variant="outline" className="rounded-full">
-              Mountain
-            </Button>
+            {['Luxury', 'Nature', 'Beach', 'Mountain'].map((category) => (
+              <Button
+                key={category}
+                variant={
+                  selectedCategories.includes(category) ? 'default' : 'outline'
+                }
+                className="rounded-full"
+                onClick={() => toggleCategory(category)}
+              >
+                {category}
+              </Button>
+            ))}
           </div>
         </div>
       </div>
