@@ -2,14 +2,12 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Bookmark, ChevronLeft, ChevronRight, Star } from 'lucide-react'
 import {
-  ThumbsUp,
-  ThumbsDown,
-  Star,
-  ChevronLeft,
-  ChevronRight,
-} from 'lucide-react'
-import { getSpots, toggleStoredSpot, getStoredSpotStatus } from '@/services/api'
+  getSpots,
+  getCurrentUserStoredSpots,
+  toggleSavedSpot,
+} from '@/services/api'
 
 const ImageCarousel = ({ images }) => {
   if (!images || images.length === 0) {
@@ -69,58 +67,24 @@ const ImageCarousel = ({ images }) => {
   )
 }
 
-const SpotCard = ({ spot }) => {
+const SpotCard = ({ spot, savedSpotIds, onSaveToggle }) => {
   const navigate = useNavigate()
-  const [storedStatus, setStoredStatus] = useState({
-    isLiked: null,
-    isDisliked: null,
-  })
+  const [isSaved, setIsSaved] = useState(false)
 
   useEffect(() => {
-    const fetchStoredStatus = async () => {
-      try {
-        const response = await getStoredSpotStatus(spot.id)
-        if (response.success) {
-          setStoredStatus({
-            isLiked: response.data?.is_liked === true,
-            isDisliked: response.data?.is_liked === false,
-          })
-        }
-      } catch (error) {
-        console.error('Error fetching stored status:', error)
-      }
-    }
+    setIsSaved(savedSpotIds.includes(spot.id))
+  }, [savedSpotIds, spot.id])
 
-    fetchStoredStatus()
-  }, [spot.id])
-
-  const handleStoredSpotToggle = async (e, isLiked) => {
-    e.stopPropagation() // Prevent navigation when clicking the buttons
+  const handleSaveToggle = async (e) => {
+    e.stopPropagation()
     try {
-      const shouldRemove =
-        (isLiked && storedStatus.isLiked) ||
-        (!isLiked && storedStatus.isDisliked)
-
-      const response = await toggleStoredSpot(
-        spot.id,
-        shouldRemove ? null : isLiked
-      )
-
+      const response = await toggleSavedSpot(spot.id)
       if (response.success) {
-        if (shouldRemove) {
-          setStoredStatus({
-            isLiked: null,
-            isDisliked: null,
-          })
-        } else {
-          setStoredStatus({
-            isLiked: isLiked === true ? true : null,
-            isDisliked: isLiked === false ? true : null,
-          })
-        }
+        setIsSaved(!isSaved)
+        onSaveToggle(spot.id)
       }
     } catch (error) {
-      console.error('Error toggling stored spot:', error)
+      console.error('Error toggling saved spot:', error)
     }
   }
 
@@ -133,40 +97,18 @@ const SpotCard = ({ spot }) => {
       <div className="p-4">
         <div className="flex justify-between items-start mb-2">
           <h3 className="text-xl font-semibold">{spot.name}</h3>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={(e) => handleStoredSpotToggle(e, true)}
-              className={`${
-                storedStatus.isLiked
-                  ? 'bg-green-500 hover:bg-green-600 border-green-500'
-                  : 'hover:bg-green-100'
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleSaveToggle}
+            className="hover:bg-transparent p-2"
+          >
+            <Bookmark
+              className={`transform scale-150 ${
+                isSaved ? 'fill-current' : 'text-gray-500'
               }`}
-            >
-              <ThumbsUp
-                className={`h-4 w-4 ${
-                  storedStatus.isLiked ? 'text-white' : 'text-green-500'
-                }`}
-              />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={(e) => handleStoredSpotToggle(e, false)}
-              className={`${
-                storedStatus.isDisliked
-                  ? 'bg-red-500 hover:bg-red-600 border-red-500'
-                  : 'hover:bg-red-100'
-              }`}
-            >
-              <ThumbsDown
-                className={`h-4 w-4 ${
-                  storedStatus.isDisliked ? 'text-white' : 'text-red-500'
-                }`}
-              />
-            </Button>
-          </div>
+            />
+          </Button>
         </div>
         <p className="text-sm text-gray-500 mb-2">{spot.address}</p>
         <p className="text-sm text-gray-600 line-clamp-2">{spot.description}</p>
@@ -189,17 +131,25 @@ const SpotCard = ({ spot }) => {
 
 const Spots = () => {
   const [spots, setSpots] = useState([])
+  const [savedSpotIds, setSavedSpotIds] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    const fetchSpots = async () => {
+    const fetchData = async () => {
       try {
-        const response = await getSpots()
-        if (response.success) {
-          setSpots(response.data)
-        } else {
-          setError('Failed to fetch spots')
+        const [spotsResponse, savedSpotsResponse] = await Promise.all([
+          getSpots(),
+          getCurrentUserStoredSpots(),
+        ])
+
+        if (spotsResponse.success) {
+          setSpots(spotsResponse.data)
+        }
+
+        if (savedSpotsResponse.success) {
+          const savedIds = savedSpotsResponse.data.map((item) => item.spot_id)
+          setSavedSpotIds(savedIds)
         }
       } catch (err) {
         setError(err.message)
@@ -208,8 +158,16 @@ const Spots = () => {
       }
     }
 
-    fetchSpots()
+    fetchData()
   }, [])
+
+  const handleSaveToggle = (spotId) => {
+    setSavedSpotIds((prev) =>
+      prev.includes(spotId)
+        ? prev.filter((id) => id !== spotId)
+        : [...prev, spotId]
+    )
+  }
 
   if (loading)
     return <div className="flex justify-center p-8">Loading spots...</div>
@@ -221,7 +179,12 @@ const Spots = () => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
       {spots.map((spot) => (
-        <SpotCard key={spot.id} spot={spot} />
+        <SpotCard
+          key={spot.id}
+          spot={spot}
+          savedSpotIds={savedSpotIds}
+          onSaveToggle={handleSaveToggle}
+        />
       ))}
     </div>
   )

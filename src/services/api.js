@@ -1,11 +1,27 @@
 import axios from 'axios'
+import supabase from '../lib/supabaseClient'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3003'
 
+// Helper function to get auth headers
+const getAuthHeaders = async () => {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  return {
+    Authorization: `Bearer ${session?.access_token || ''}`,
+    'Content-Type': 'application/json',
+  }
+}
+
 export const getSpots = async () => {
   try {
-    const response = await axios.get(`${API_URL}/spots`)
-    return response.data
+    const headers = await getAuthHeaders()
+    const response = await fetch(`${API_URL}/spots`, {
+      headers,
+    })
+    const data = await response.json()
+    return data
   } catch (error) {
     console.error('Error fetching spots:', error)
     throw error
@@ -14,7 +30,10 @@ export const getSpots = async () => {
 
 export const getSpotById = async (id) => {
   try {
-    const response = await fetch(`${API_URL}/spots/${id}`)
+    const headers = await getAuthHeaders()
+    const response = await fetch(`${API_URL}/spots/${id}`, {
+      headers,
+    })
     const data = await response.json()
     return data
   } catch (error) {
@@ -25,11 +44,10 @@ export const getSpotById = async (id) => {
 
 export const createReview = async (reviewData) => {
   try {
+    const headers = await getAuthHeaders()
     const response = await fetch(`${API_URL}/reviews`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify(reviewData),
     })
     return await response.json()
@@ -41,7 +59,10 @@ export const createReview = async (reviewData) => {
 
 export const getReviewsBySpotId = async (spotId) => {
   try {
-    const response = await fetch(`${API_URL}/reviews/spot/${spotId}`)
+    const headers = await getAuthHeaders()
+    const response = await fetch(`${API_URL}/reviews/spot/${spotId}`, {
+      headers,
+    })
     return await response.json()
   } catch (error) {
     console.error('Error fetching reviews:', error)
@@ -49,31 +70,53 @@ export const getReviewsBySpotId = async (spotId) => {
   }
 }
 
-export const toggleStoredSpot = async (spotId, isLiked) => {
+export const toggleSavedSpot = async (spotId) => {
   try {
+    const headers = await getAuthHeaders()
     const response = await fetch(`${API_URL}/stored-spots`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify({
         spot_id: spotId,
-        is_liked: isLiked,
       }),
     })
     return await response.json()
   } catch (error) {
-    console.error('Error toggling stored spot:', error)
+    console.error('Error toggling saved spot:', error)
     throw error
   }
 }
 
-export const getStoredSpotStatus = async (spotId) => {
+export const getSavedSpotStatus = async (spotId) => {
   try {
-    const response = await fetch(`${API_URL}/stored-spots/${spotId}`)
+    const headers = await getAuthHeaders()
+    const response = await fetch(`${API_URL}/stored-spots/${spotId}/status`, {
+      headers,
+    })
     return await response.json()
   } catch (error) {
-    console.error('Error getting stored spot status:', error)
+    console.error('Error getting saved spot status:', error)
     throw error
   }
+}
+
+export const getCurrentUserStoredSpots = async () => {
+  try {
+    const headers = await getAuthHeaders()
+    const response = await fetch(`${API_URL}/stored-spots/user`, {
+      headers,
+    })
+    return await response.json()
+  } catch (error) {
+    console.error('Error getting user stored spots:', error)
+    throw error
+  }
+}
+
+// Helper function to check if user is authenticated
+export const isAuthenticated = async () => {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  return !!session
 }
