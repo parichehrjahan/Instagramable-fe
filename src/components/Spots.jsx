@@ -7,6 +7,7 @@ import {
   getSpots,
   getCurrentUserStoredSpots,
   toggleSavedSpot,
+  getSpotImages,
 } from '@/services/api'
 import Sidebar from './sidebar'
 
@@ -71,10 +72,26 @@ const ImageCarousel = ({ images }) => {
 const SpotCard = ({ spot, savedSpotIds, onSaveToggle }) => {
   const navigate = useNavigate()
   const [isSaved, setIsSaved] = useState(false)
+  const [spotImages, setSpotImages] = useState([])
 
   useEffect(() => {
     setIsSaved(savedSpotIds.includes(spot.id))
   }, [savedSpotIds, spot.id])
+
+  useEffect(() => {
+    const fetchSpotImages = async () => {
+      try {
+        const response = await getSpotImages(spot.id)
+        if (response.success) {
+          setSpotImages(response.data)
+        }
+      } catch (error) {
+        console.error('Error fetching spot images:', error)
+      }
+    }
+
+    fetchSpotImages()
+  }, [spot.id])
 
   const handleSaveToggle = async (e) => {
     e.stopPropagation()
@@ -94,7 +111,7 @@ const SpotCard = ({ spot, savedSpotIds, onSaveToggle }) => {
       className="overflow-hidden rounded-lg cursor-pointer"
       onClick={() => navigate(`/spot/${spot.id}`)}
     >
-      <ImageCarousel images={spot.image_urls} />
+      <ImageCarousel images={spotImages} />
       <div className="p-4">
         <div className="flex justify-between items-start mb-2">
           <h3 className="text-xl font-semibold">{spot.name}</h3>

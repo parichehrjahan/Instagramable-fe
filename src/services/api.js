@@ -120,3 +120,32 @@ export const isAuthenticated = async () => {
   } = await supabase.auth.getSession()
   return !!session
 }
+
+export const getSpotImages = async (spotId) => {
+  try {
+    const headers = await getAuthHeaders()
+    const response = await fetch(`${API_URL}/spots/${spotId}/images`, {
+      headers,
+    })
+    const data = await response.json()
+    return data
+  } catch (error) {
+    console.error('Error fetching spot images:', error)
+    throw error
+  }
+}
+
+export const createSpot = async (spotData) => {
+  try {
+    const headers = await getAuthHeaders()
+    const response = await fetch(`${API_URL}/spots`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(spotData),
+    })
+    return await response.json()
+  } catch (error) {
+    console.error('Error creating spot:', error)
+    throw error
+  }
+}
