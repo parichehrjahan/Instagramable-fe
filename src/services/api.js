@@ -149,3 +149,17 @@ export const createSpot = async (spotData) => {
     throw error
   }
 }
+
+export const deleteSpot = async (spotId) => {
+  try {
+    const headers = await getAuthHeaders()
+    const response = await fetch(`${API_URL}/spots/${spotId}`, {
+      method: 'DELETE',
+      headers,
+    })
+    return await response.json()
+  } catch (error) {
+    console.error('Error deleting spot:', error)
+    throw error
+  }
+}

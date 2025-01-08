@@ -2,14 +2,25 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Bookmark, ChevronLeft, ChevronRight, Star } from 'lucide-react'
+import { Bookmark, ChevronLeft, ChevronRight, Star, Trash2 } from 'lucide-react'
 import {
   getSpots,
   getCurrentUserStoredSpots,
   toggleSavedSpot,
   getSpotImages,
+  deleteSpot,
 } from '@/services/api'
 import Sidebar from './sidebar'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 const ImageCarousel = ({ images }) => {
   if (!images || images.length === 0) {
@@ -73,6 +84,8 @@ const SpotCard = ({ spot, savedSpotIds, onSaveToggle }) => {
   const navigate = useNavigate()
   const [isSaved, setIsSaved] = useState(false)
   const [spotImages, setSpotImages] = useState([])
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     setIsSaved(savedSpotIds.includes(spot.id))
@@ -106,44 +119,102 @@ const SpotCard = ({ spot, savedSpotIds, onSaveToggle }) => {
     }
   }
 
+  const handleDelete = async (e) => {
+    e.stopPropagation()
+    setIsDeleting(true)
+    try {
+      const response = await deleteSpot(spot.id)
+      if (response.success) {
+        window.location.reload()
+      }
+    } catch (error) {
+      console.error('Error deleting spot:', error)
+    } finally {
+      setIsDeleting(false)
+      setIsDeleteDialogOpen(false)
+    }
+  }
+
   return (
-    <Card
-      className="overflow-hidden rounded-lg cursor-pointer"
-      onClick={() => navigate(`/spot/${spot.id}`)}
-    >
-      <ImageCarousel images={spotImages} />
-      <div className="p-4">
-        <div className="flex justify-between items-start mb-2">
-          <h3 className="text-xl font-semibold">{spot.name}</h3>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleSaveToggle}
-            className="hover:bg-transparent p-2"
-          >
-            <Bookmark
-              className={`transform scale-150 ${
-                isSaved ? 'fill-current' : 'text-gray-500'
-              }`}
-            />
-          </Button>
+    <>
+      <Card
+        className="overflow-hidden rounded-lg cursor-pointer"
+        onClick={() => navigate(`/spot/${spot.id}`)}
+      >
+        <ImageCarousel images={spotImages} />
+        <div className="p-4">
+          <div className="flex justify-between items-start mb-2">
+            <h3 className="text-xl font-semibold">{spot.name}</h3>
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setIsDeleteDialogOpen(true)
+                }}
+                className="hover:bg-transparent p-2"
+              >
+                <Trash2 className="h-5 w-5 text-red-500" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSaveToggle}
+                className="hover:bg-transparent p-2"
+              >
+                <Bookmark
+                  className={`transform scale-150 ${
+                    isSaved ? 'fill-current' : 'text-gray-500'
+                  }`}
+                />
+              </Button>
+            </div>
+          </div>
+          <p className="text-sm text-gray-500 mb-2">{spot.address}</p>
+          <p className="text-sm text-gray-600 line-clamp-2">
+            {spot.description}
+          </p>
+          <div className="flex items-center mt-2">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <Star
+                key={star}
+                className={`h-5 w-5 ${
+                  star <= spot.rating
+                    ? 'text-yellow-400 fill-current'
+                    : 'text-gray-300'
+                }`}
+              />
+            ))}
+          </div>
         </div>
-        <p className="text-sm text-gray-500 mb-2">{spot.address}</p>
-        <p className="text-sm text-gray-600 line-clamp-2">{spot.description}</p>
-        <div className="flex items-center mt-2">
-          {[1, 2, 3, 4, 5].map((star) => (
-            <Star
-              key={star}
-              className={`h-5 w-5 ${
-                star <= spot.rating
-                  ? 'text-yellow-400 fill-current'
-                  : 'text-gray-300'
-              }`}
-            />
-          ))}
-        </div>
-      </div>
-    </Card>
+      </Card>
+
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Spot</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{spot.name}"? This action cannot
+              be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }
 
