@@ -8,7 +8,7 @@ import { useJsApiLoader, Autocomplete } from '@react-google-maps/api'
 // Define libraries outside component to prevent re-renders
 const libraries = ['places']
 
-const Sidebar = () => {
+const Sidebar = ({ onFilterChange }) => {
   const [selectedCategories, setSelectedCategories] = useState([])
   const [distance, setDistance] = useState(50)
   const [location, setLocation] = useState(null)
@@ -37,11 +37,19 @@ const Sidebar = () => {
   }
 
   const toggleCategory = (category) => {
-    setSelectedCategories((prev) =>
-      prev.includes(category)
-        ? prev.filter((c) => c !== category)
-        : [...prev, category]
-    )
+    const newCategories = selectedCategories.includes(category)
+      ? selectedCategories.filter((c) => c !== category)
+      : [...selectedCategories, category]
+
+    setSelectedCategories(newCategories)
+
+    // Call onFilterChange with all current filter values
+    onFilterChange({
+      categories: newCategories,
+      distance,
+      location,
+      searchQuery,
+    })
   }
 
   return (
@@ -94,7 +102,18 @@ const Sidebar = () => {
         <div className="space-y-2">
           <h3 className="text-lg font-semibold">Categories</h3>
           <div className="flex flex-wrap gap-2">
-            {['Luxury', 'Nature', 'Beach', 'Mountain'].map((category) => (
+            {[
+              'Luxury',
+              'Nature',
+              'Architecture',
+              'Cityscapes',
+              'Food & Cafés',
+              'Cultural Spots',
+              'Quirky',
+              'Seasonal',
+              'Adventure',
+              'Themed',
+            ].map((category) => (
               <Button
                 key={category}
                 variant={
