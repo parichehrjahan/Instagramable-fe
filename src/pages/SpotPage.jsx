@@ -1,16 +1,17 @@
 import { useParams } from 'react-router'
 import { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
-import { Star, Plus } from 'lucide-react'
-import { getSpotById, getReviewsBySpotId } from '@/services/api'
+import { Star, Plus, ChevronLeft, ChevronRight } from 'lucide-react'
+import { getSpotById, getReviewsBySpotId, getSpotImages } from '@/services/api'
 import ReviewForm from '@/components/ReviewForm'
 
 const SpotPage = () => {
   const { id } = useParams()
-  const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [spot, setSpot] = useState(null)
+  const [spotImages, setSpotImages] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [currentImage, setCurrentImage] = useState(0)
   const [reviews, setReviews] = useState([])
 
   // Fetch spot data
@@ -33,6 +34,24 @@ const SpotPage = () => {
     fetchSpot()
   }, [id])
 
+  // New useEffect to fetch images
+  useEffect(() => {
+    const fetchSpotImages = async () => {
+      try {
+        const response = await getSpotImages(id)
+        if (response.success) {
+          setSpotImages(response.data)
+        }
+      } catch (error) {
+        console.error('Error fetching spot images:', error)
+      }
+    }
+
+    if (id) {
+      fetchSpotImages()
+    }
+  }, [id])
+
   // New useEffect for reviews
   useEffect(() => {
     const fetchReviews = async () => {
@@ -51,18 +70,17 @@ const SpotPage = () => {
     }
   }, [id])
 
-  // Auto-rotate images
-  useEffect(() => {
-    if (!spot?.image_urls?.length) return
+  const nextImage = (e) => {
+    e.stopPropagation()
+    setCurrentImage((prev) => (prev + 1) % spotImages.length)
+  }
 
-    const timer = setInterval(() => {
-      setCurrentImageIndex((prevIndex) =>
-        prevIndex === spot.image_urls.length - 1 ? 0 : prevIndex + 1
-      )
-    }, 4000)
-
-    return () => clearInterval(timer)
-  }, [spot?.image_urls?.length])
+  const prevImage = (e) => {
+    e.stopPropagation()
+    setCurrentImage(
+      (prev) => (prev - 1 + spotImages.length) % spotImages.length
+    )
+  }
 
   const handleReviewClick = () => {
     // TODO: Implement review modal/popup
@@ -85,28 +103,39 @@ const SpotPage = () => {
     <div className="max-w-4xl mx-auto p-4">
       {/* Image Gallery */}
       <div className="relative h-[400px] bg-muted rounded-lg mb-6">
-        {spot.image_urls && spot.image_urls.length > 0 ? (
+        {spotImages && spotImages.length > 0 ? (
           <>
-            <div className="absolute inset-0 transition-opacity duration-500">
-              <img
-                src={spot.image_urls[currentImageIndex]}
-                alt={spot.name}
-                className="w-full h-full object-cover rounded-lg"
-              />
-            </div>
-
-            {/* Image Navigation Dots */}
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
-              {spot.image_urls.map((_, index) => (
+            <img
+              src={spotImages[currentImage]}
+              alt={spot.name}
+              className="w-full h-full object-cover rounded-lg"
+            />
+            {spotImages.length > 1 && (
+              <>
                 <button
-                  key={index}
-                  className={`w-2 h-2 rounded-full transition-colors ${
-                    index === currentImageIndex ? 'bg-white' : 'bg-white/50'
-                  }`}
-                  onClick={() => setCurrentImageIndex(index)}
-                />
-              ))}
-            </div>
+                  onClick={prevImage}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 text-white"
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </button>
+                <button
+                  onClick={nextImage}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 text-white"
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </button>
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                  {spotImages.map((_, idx) => (
+                    <div
+                      key={idx}
+                      className={`w-2 h-2 rounded-full ${
+                        currentImage === idx ? 'bg-white' : 'bg-white/50'
+                      }`}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
           </>
         ) : (
           <div className="flex items-center justify-center h-full">
