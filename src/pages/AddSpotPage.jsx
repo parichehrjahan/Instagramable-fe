@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -18,6 +18,35 @@ const AddSpotPage = () => {
   const [images, setImages] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [availableCategories, setAvailableCategories] = useState([])
+  const [selectedCategories, setSelectedCategories] = useState([])
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('categories')
+          .select('*')
+          .order('name')
+
+        if (error) throw error
+        setAvailableCategories(data)
+      } catch (error) {
+        console.error('Error fetching categories:', error)
+        setError('Failed to load categories')
+      }
+    }
+
+    fetchCategories()
+  }, [])
+
+  const toggleCategory = (categoryId) => {
+    setSelectedCategories((prev) =>
+      prev.includes(categoryId)
+        ? prev.filter((id) => id !== categoryId)
+        : [...prev, categoryId]
+    )
+  }
 
   const handleImageChange = async (e) => {
     const files = Array.from(e.target.files)
@@ -101,28 +130,44 @@ const AddSpotPage = () => {
     setError(null)
 
     try {
-      // Upload all images first
+      // Upload images first
       const uploadPromises = images.map(uploadImage)
       const imageUrls = await Promise.all(uploadPromises)
 
-      // Create spot with image URLs
-      const spotData = {
-        ...formData,
-        images: imageUrls.map((url) => ({
-          image_url: url,
-        })),
+      // Create the spot
+      const { data: spot, error: spotError } = await supabase
+        .from('spots')
+        .insert([
+          {
+            name: formData.name,
+            description: formData.description,
+            location: formData.location,
+            // ... other spot fields
+          },
+        ])
+        .select()
+        .single()
+
+      if (spotError) throw spotError
+
+      // Insert category relationships
+      if (selectedCategories.length > 0) {
+        const categoryRelations = selectedCategories.map((categoryId) => ({
+          spot_id: spot.id,
+          category_id: categoryId,
+        }))
+
+        const { error: categoryError } = await supabase
+          .from('spot_categories')
+          .insert(categoryRelations)
+
+        if (categoryError) throw categoryError
       }
 
-      const response = await createSpot(spotData)
-
-      if (response.success) {
-        navigate(`/spot/${response.data.id}`)
-      } else {
-        throw new Error(response.error || 'Failed to create spot')
-      }
-    } catch (err) {
-      setError(err.message || 'Failed to create spot')
-      console.error('Error creating spot:', err)
+      navigate(`/spot/${spot.id}`)
+    } catch (error) {
+      console.error('Error creating spot:', error)
+      setError(error.message)
     } finally {
       setLoading(false)
     }
@@ -238,6 +283,34 @@ const AddSpotPage = () => {
                 rows={4}
               />
             </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Categories *
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {availableCategories.map((category) => (
+                  <Button
+                    key={category.id}
+                    type="button"
+                    variant={
+                      selectedCategories.includes(category.id)
+                        ? 'default'
+                        : 'outline'
+                    }
+                    className="rounded-full"
+                    onClick={() => toggleCategory(category.id)}
+                  >
+                    {category.name}
+                  </Button>
+                ))}
+              </div>
+              {selectedCategories.length === 0 && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  Please select at least one category
+                </p>
+              )}
+            </div>
           </div>
 
           <div className="flex justify-end gap-4 pt-4">
@@ -255,7 +328,8 @@ const AddSpotPage = () => {
                 loading ||
                 images.length === 0 ||
                 !formData.name ||
-                !formData.location
+                !formData.location ||
+                selectedCategories.length === 0
               }
             >
               {loading ? (

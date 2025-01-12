@@ -233,14 +233,14 @@ const Spots = () => {
           getCurrentUserStoredSpots(),
         ])
 
-        if (spotsResponse.success) {
-          setSpots(spotsResponse.data)
-        }
-
+        if (spotsResponse.error) throw spotsResponse.error
         if (savedSpotsResponse.success) {
           const savedIds = savedSpotsResponse.data.map((item) => item.spot_id)
           setSavedSpotIds(savedIds)
         }
+
+        setSpots(spotsResponse.data)
+        setFilteredSpots(spotsResponse.data)
       } catch (err) {
         setError(err.message)
       } finally {
@@ -302,9 +302,9 @@ const Spots = () => {
     }
 
     // Filter by categories
-    if (categories.length > 0) {
+    if (categories && categories.length > 0) {
       filtered = filtered.filter((spot) =>
-        categories.some((category) => spot.categories.includes(category))
+        spot.spot_categories.some((sc) => categories.includes(sc.category_id))
       )
     }
 

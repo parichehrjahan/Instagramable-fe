@@ -163,3 +163,17 @@ export const deleteSpot = async (spotId) => {
     throw error
   }
 }
+
+export const getCategories = async () => {
+  try {
+    const headers = await getAuthHeaders()
+    const response = await fetch(`${API_URL}/categories`, {
+      headers,
+    })
+    const data = await response.json()
+    return data
+  } catch (error) {
+    console.error('Error fetching categories:', error)
+    throw error
+  }
+}

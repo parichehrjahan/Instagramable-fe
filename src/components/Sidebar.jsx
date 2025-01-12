@@ -2,8 +2,10 @@ import { Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useJsApiLoader, Autocomplete } from '@react-google-maps/api'
+import supabase from '@/lib/supabaseClient'
+import { getCategories } from '@/services/api'
 
 // Define libraries outside component to prevent re-renders
 const libraries = ['places']
@@ -14,11 +16,30 @@ const Sidebar = ({ onFilterChange }) => {
   const [location, setLocation] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [loadError, setLoadError] = useState(null)
+  const [availableCategories, setAvailableCategories] = useState([])
 
   const { isLoaded, loadError: apiLoadError } = useJsApiLoader({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
     libraries,
   })
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await getCategories()
+        if (response.success) {
+          setAvailableCategories(response.data)
+        } else {
+          setLoadError('Failed to load categories')
+        }
+      } catch (error) {
+        console.error('Error fetching categories:', error)
+        setLoadError('Failed to load categories')
+      }
+    }
+
+    fetchCategories()
+  }, [])
 
   const onPlaceChanged = useCallback(() => {
     const place = autocomplete.getPlace()
@@ -36,14 +57,14 @@ const Sidebar = ({ onFilterChange }) => {
     setLoadError('Failed to load Google Maps')
   }
 
-  const toggleCategory = (category) => {
-    const newCategories = selectedCategories.includes(category)
-      ? selectedCategories.filter((c) => c !== category)
-      : [...selectedCategories, category]
+  const toggleCategory = (categoryId) => {
+    const newCategories = selectedCategories.includes(categoryId)
+      ? selectedCategories.filter((c) => c !== categoryId)
+      : [...selectedCategories, categoryId]
 
     setSelectedCategories(newCategories)
 
-    // Call onFilterChange with all current filter values
+    // Instead of fetching from Supabase, just pass the new categories to parent
     onFilterChange({
       categories: newCategories,
       distance,
@@ -102,27 +123,18 @@ const Sidebar = ({ onFilterChange }) => {
         <div className="space-y-2">
           <h3 className="text-lg font-semibold">Categories</h3>
           <div className="flex flex-wrap gap-2">
-            {[
-              'Luxury',
-              'Nature',
-              'Architecture',
-              'Cityscapes',
-              'Food & Cafés',
-              'Cultural Spots',
-              'Quirky',
-              'Seasonal',
-              'Adventure',
-              'Themed',
-            ].map((category) => (
+            {availableCategories.map((category) => (
               <Button
-                key={category}
+                key={category.id}
                 variant={
-                  selectedCategories.includes(category) ? 'default' : 'outline'
+                  selectedCategories.includes(category.id)
+                    ? 'default'
+                    : 'outline'
                 }
                 className="rounded-full"
-                onClick={() => toggleCategory(category)}
+                onClick={() => toggleCategory(category.id)}
               >
-                {category}
+                {category.name}
               </Button>
             ))}
           </div>
