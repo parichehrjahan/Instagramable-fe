@@ -177,3 +177,17 @@ export const getCategories = async () => {
     throw error
   }
 }
+
+export const updateSpotRating = async (spotId) => {
+  try {
+    const headers = await getAuthHeaders()
+    const response = await fetch(`${API_URL}/spots/${spotId}/rating`, {
+      method: 'PUT',
+      headers,
+    })
+    return await response.json()
+  } catch (error) {
+    console.error('Error updating spot rating:', error)
+    throw error
+  }
+}
