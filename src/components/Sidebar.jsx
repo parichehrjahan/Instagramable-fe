@@ -2,44 +2,31 @@ import { Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 import { useJsApiLoader, Autocomplete } from '@react-google-maps/api'
-import supabase from '@/lib/supabaseClient'
-import { getCategories } from '@/services/api'
+import { Skeleton } from '@/components/ui/skeleton'
 
 // Define libraries outside component to prevent re-renders
 const libraries = ['places']
 
-const Sidebar = ({ onFilterChange }) => {
+const CategorySkeleton = () => (
+  <div className="flex flex-wrap gap-2">
+    {[...Array(6)].map((_, i) => (
+      <Skeleton key={i} className="h-9 w-20 rounded-full" />
+    ))}
+  </div>
+)
+
+const Sidebar = ({ onFilterChange, categories, loading, error }) => {
   const [selectedCategories, setSelectedCategories] = useState([])
   const [distance, setDistance] = useState(50)
   const [location, setLocation] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
-  const [loadError, setLoadError] = useState(null)
-  const [availableCategories, setAvailableCategories] = useState([])
 
   const { isLoaded, loadError: apiLoadError } = useJsApiLoader({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
     libraries,
   })
-
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const response = await getCategories()
-        if (response.success) {
-          setAvailableCategories(response.data)
-        } else {
-          setLoadError('Failed to load categories')
-        }
-      } catch (error) {
-        console.error('Error fetching categories:', error)
-        setLoadError('Failed to load categories')
-      }
-    }
-
-    fetchCategories()
-  }, [])
 
   const onPlaceChanged = useCallback(() => {
     const place = autocomplete.getPlace()
@@ -53,10 +40,6 @@ const Sidebar = ({ onFilterChange }) => {
     }
   }, [])
 
-  if (apiLoadError) {
-    setLoadError('Failed to load Google Maps')
-  }
-
   const toggleCategory = (categoryId) => {
     const newCategories = selectedCategories.includes(categoryId)
       ? selectedCategories.filter((c) => c !== categoryId)
@@ -64,7 +47,6 @@ const Sidebar = ({ onFilterChange }) => {
 
     setSelectedCategories(newCategories)
 
-    // Instead of fetching from Supabase, just pass the new categories to parent
     onFilterChange({
       categories: newCategories,
       distance,
@@ -98,7 +80,6 @@ const Sidebar = ({ onFilterChange }) => {
               <Input disabled placeholder="Loading..." className="pl-8" />
             )}
           </div>
-          {loadError && <div className="text-sm text-red-500">{loadError}</div>}
           {location && (
             <div className="text-sm text-muted-foreground">
               Selected: {location.address}
@@ -108,13 +89,17 @@ const Sidebar = ({ onFilterChange }) => {
 
         <div className="space-y-2">
           <h3 className="text-lg font-semibold">Distance</h3>
-          <Slider
-            defaultValue={[distance]}
-            max={100}
-            step={1}
-            className="py-4"
-            onValueChange={([value]) => setDistance(value)}
-          />
+          {loading ? (
+            <Skeleton className="h-2 w-full my-6" />
+          ) : (
+            <Slider
+              defaultValue={[distance]}
+              max={100}
+              step={1}
+              className="py-4"
+              onValueChange={([value]) => setDistance(value)}
+            />
+          )}
           <div className="text-sm text-muted-foreground">
             Within {distance} km
           </div>
@@ -122,22 +107,28 @@ const Sidebar = ({ onFilterChange }) => {
 
         <div className="space-y-2">
           <h3 className="text-lg font-semibold">Categories</h3>
-          <div className="flex flex-wrap gap-2">
-            {availableCategories.map((category) => (
-              <Button
-                key={category.id}
-                variant={
-                  selectedCategories.includes(category.id)
-                    ? 'default'
-                    : 'outline'
-                }
-                className="rounded-full"
-                onClick={() => toggleCategory(category.id)}
-              >
-                {category.name}
-              </Button>
-            ))}
-          </div>
+          {loading ? (
+            <CategorySkeleton />
+          ) : error ? (
+            <div className="text-sm text-red-500">{error}</div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {categories.map((category) => (
+                <Button
+                  key={category.id}
+                  variant={
+                    selectedCategories.includes(category.id)
+                      ? 'default'
+                      : 'outline'
+                  }
+                  className="rounded-full"
+                  onClick={() => toggleCategory(category.id)}
+                >
+                  {category.name}
+                </Button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </aside>

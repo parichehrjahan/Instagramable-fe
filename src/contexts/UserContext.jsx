@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react'
-import supabase from '../lib/supabaseClient'
+import supabase from '@/lib/supabaseClient'
 
 const UserContext = createContext({})
 
@@ -14,6 +14,8 @@ export function UserProvider({ children }) {
       setSession(session)
       if (session?.user) {
         fetchUser(session.user.id)
+      } else {
+        setLoading(false)
       }
     })
 
@@ -25,6 +27,7 @@ export function UserProvider({ children }) {
         fetchUser(session.user.id)
       } else {
         setUser(null)
+        setLoading(false)
       }
     })
 

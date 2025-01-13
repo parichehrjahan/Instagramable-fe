@@ -1,17 +1,27 @@
 import { Outlet } from 'react-router'
-import Header from './Header'
+import Header from '@/components/Header'
 import { Auth } from '@supabase/auth-ui-react'
 import { ThemeSupa } from '@supabase/auth-ui-shared'
-import { useUser } from '../contexts/UserContext'
-import supabase from '../lib/supabaseClient'
+import { useUser } from '@/contexts/UserContext'
+import supabase from '@/lib/supabaseClient'
 
 const Layout = () => {
-  const { session } = useUser()
+  const { session, loading } = useUser()
 
-  if (!session) {
+  if (loading) {
+    return null
+  }
+
+  if (!loading && !session) {
     return (
       <div className="mx-auto w-full max-w-2xl mt-[50vh] -translate-y-1/2">
-        <Auth supabaseClient={supabase} appearance={{ theme: ThemeSupa }} />
+        <Auth
+          supabaseClient={supabase}
+          appearance={{ theme: ThemeSupa }}
+          onSuccess={() => {
+            // Handle successful auth if needed
+          }}
+        />
       </div>
     )
   }
