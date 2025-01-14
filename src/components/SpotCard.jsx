@@ -52,7 +52,7 @@ const SpotCard = ({ spot, savedSpotIds, onSaveToggle }) => {
         className="overflow-hidden rounded-lg cursor-pointer"
         onClick={() => navigate(`/spot/${spot.id}`)}
       >
-        <ImageCarousel images={spot.images} />
+        <ImageCarousel images={spot.spot_images} />
         <div className="p-4">
           <div className="flex justify-between items-start mb-2">
             <h3 className="text-xl font-semibold">{spot.name}</h3>

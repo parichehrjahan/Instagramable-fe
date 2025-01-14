@@ -25,7 +25,7 @@ const ImageCarousel = ({ images }) => {
   return (
     <div className="relative h-[400px] bg-muted">
       <img
-        src={images[currentImage]}
+        src={images[currentImage].image_url}
         alt="Spot"
         className="w-full h-full object-cover"
       />
