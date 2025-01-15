@@ -1,9 +1,16 @@
 import { useParams } from 'react-router'
 import { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
-import { Star, Plus, ChevronLeft, ChevronRight } from 'lucide-react'
-import { getSpotById, getReviewsBySpotId, getSpotImages } from '@/services/api'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+import {
+  getSpotById,
+  getReviewsBySpotId,
+  getSpotImages,
+  createReview,
+} from '@/services/api'
 import ReviewForm from '@/components/ReviewForm'
+import ReviewInteractions from '@/components/ReviewInteraction'
+import SpotReview from '@/components/SpotReview'
 
 const SpotPage = () => {
   const { id } = useParams()
@@ -91,17 +98,12 @@ const SpotPage = () => {
     setReviews((prev) => [newReview, ...prev])
   }
 
-  if (loading) return <div className="flex justify-center p-8">Loading...</div>
-  if (error)
-    return (
-      <div className="flex justify-center p-8 text-red-500">Error: {error}</div>
-    )
-  if (!spot)
-    return <div className="flex justify-center p-8">Spot not found</div>
+  if (loading) return <div>Loading...</div>
+  if (error) return <div>Error: {error}</div>
+  if (!spot) return <div>Spot not found</div>
 
   return (
     <div className="max-w-4xl mx-auto p-4">
-      {/* Image Gallery */}
       <div className="relative h-[400px] bg-muted rounded-lg mb-6">
         {spotImages && spotImages.length > 0 ? (
           <>
@@ -146,32 +148,12 @@ const SpotPage = () => {
 
       {/* Spot Details */}
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">{spot.name}</h1>
-            <p className="text-gray-600">{spot.address}</p>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <div className="flex">
-              {[...Array(5)].map((_, index) => (
-                <Star
-                  key={index}
-                  className={`h-5 w-5 ${
-                    index < (spot.srating || 0)
-                      ? 'text-yellow-400 fill-current'
-                      : 'text-gray-300'
-                  }`}
-                />
-              ))}
-            </div>
-            <button
-              onClick={handleReviewClick}
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center gap-2"
-            >
-              Write Review
-            </button>
-          </div>
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold">{spot.name}</h1>
+          <SpotReview
+            rating={spot.average_rating}
+            reviewCount={spot.review_count}
+          />
         </div>
 
         {/* Description */}
@@ -179,22 +161,6 @@ const SpotPage = () => {
           <h2 className="font-semibold mb-2">Description</h2>
           <p className="text-gray-600">{spot.description}</p>
         </Card>
-
-        {/* Your Posts Section */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold">Your Posts</h2>
-            <button className="p-2 rounded-full hover:bg-gray-100">
-              <Plus className="h-5 w-5" />
-            </button>
-          </div>
-          <div className="grid grid-cols-3 gap-4">
-            {/* Grid of user posts - placeholder for now */}
-            <div className="aspect-square bg-gray-100 rounded-lg"></div>
-            <div className="aspect-square bg-gray-100 rounded-lg"></div>
-            <div className="aspect-square bg-gray-100 rounded-lg"></div>
-          </div>
-        </div>
 
         {/* Reviews Section */}
         <div className="mt-8">
@@ -210,22 +176,15 @@ const SpotPage = () => {
               ) : (
                 reviews.map((review) => (
                   <Card key={review.id} className="p-4">
-                    <div className="flex items-center gap-1 mb-2">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <Star
-                          key={star}
-                          className={`h-4 w-4 ${
-                            star <= review.rating
-                              ? 'fill-yellow-400 text-yellow-400'
-                              : 'text-muted-foreground'
-                          }`}
-                        />
-                      ))}
+                    <div className="flex justify-between items-start">
+                      <div className="space-y-2">
+                        <p>{review.content}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {new Date(review.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <ReviewInteractions review={review} />
                     </div>
-                    <p>{review.content}</p>
-                    <p className="text-sm text-muted-foreground mt-2">
-                      {new Date(review.created_at).toLocaleDateString()}
-                    </p>
                   </Card>
                 ))
               )}

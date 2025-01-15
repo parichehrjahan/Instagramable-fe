@@ -190,3 +190,92 @@ export const updateSpotRating = async (spotId) => {
     throw error
   }
 }
+
+export const toggleReviewLike = async (reviewId) => {
+  try {
+    const headers = await getAuthHeaders()
+    const response = await fetch(`${API_URL}/reviews/${reviewId}/like`, {
+      method: 'POST',
+      headers,
+    })
+    return await response.json()
+  } catch (error) {
+    console.error('Error toggling review like:', error)
+    throw error
+  }
+}
+
+export const toggleReviewDislike = async (reviewId) => {
+  try {
+    const headers = await getAuthHeaders()
+    const response = await fetch(`${API_URL}/reviews/${reviewId}/dislike`, {
+      method: 'POST',
+      headers,
+    })
+    return await response.json()
+  } catch (error) {
+    console.error('Error toggling review dislike:', error)
+    throw error
+  }
+}
+
+export const checkUserInteraction = async (reviewId) => {
+  try {
+    const headers = await getAuthHeaders()
+    const response = await fetch(`${API_URL}/reviews/${reviewId}/interaction`, {
+      headers,
+    })
+    return await response.json()
+  } catch (error) {
+    console.error('Error checking user interaction:', error)
+    throw error
+  }
+}
+
+export const toggleReviewInteraction = async (reviewId, isLiked) => {
+  try {
+    const { data: existingInteraction } = await supabase
+      .from('review_interactions')
+      .select('is_liked')
+      .eq('review_id', reviewId)
+      .single()
+
+    if (existingInteraction) {
+      if (existingInteraction.is_liked === isLiked) {
+        // Remove interaction if clicking the same button
+        await supabase
+          .from('review_interactions')
+          .delete()
+          .eq('review_id', reviewId)
+      } else {
+        // Update existing interaction
+        await supabase
+          .from('review_interactions')
+          .update({ is_liked: isLiked })
+          .eq('review_id', reviewId)
+      }
+    } else {
+      // Create new interaction
+      await supabase.from('review_interactions').insert({
+        review_id: reviewId,
+        is_liked: isLiked,
+      })
+    }
+
+    // Get updated counts
+    const { data: counts, error: countsError } = await supabase.rpc(
+      'get_review_counts',
+      { review_id: reviewId }
+    )
+
+    if (countsError) throw countsError
+
+    return {
+      success: true,
+      data: counts,
+    }
+  } catch (error) {
+    console.error('Error toggling review interaction:', error)
+    return { success: false, error: error.message }
+  }
+}
