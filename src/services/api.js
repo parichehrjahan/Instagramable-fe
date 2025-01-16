@@ -245,9 +245,6 @@ export const toggleReviewInteraction = async (reviewId, isLiked, spotId) => {
     const existingLikeCount = currentReview.like_count ?? 0
     const existingDislikeCount = currentReview.dislike_count ?? 0
 
-    console.log('existing', existing.is_liked)
-    console.log('isLiked', isLiked)
-
     if (existing) {
       if (isLiked && existing.is_liked) {
         return {
@@ -284,8 +281,6 @@ export const toggleReviewInteraction = async (reviewId, isLiked, spotId) => {
     } = await supabase.auth.getUser()
     if (!user) throw new Error('User not authenticated')
 
-    console.log('user', user)
-
     // First, try to get existing interaction
     const { data: existing } = await supabase
       .from('review_interactions')
@@ -295,9 +290,7 @@ export const toggleReviewInteraction = async (reviewId, isLiked, spotId) => {
       .eq('spot_id', spotId)
       .maybeSingle()
 
-    console.log('existing interaction', existing)
-
-    const currentReview = await supabase
+    const { data: currentReview } = await supabase
       .from('reviews')
       .select('like_count, dislike_count')
       .eq('id', reviewId)
@@ -314,14 +307,17 @@ export const toggleReviewInteraction = async (reviewId, isLiked, spotId) => {
 
       const newIsLiked = getNewIsLiked(existing, isLiked)
 
-      console.log('newIsLiked', newIsLiked)
-
-      await supabase
-        .from('review_interactions')
-        .update({ is_liked: newIsLiked })
-        .eq('id', existing.id)
-
-      console.log('updateData', updateData)
+      if (newIsLiked !== null) {
+        await supabase
+          .from('review_interactions')
+          .update({ is_liked: newIsLiked })
+          .eq('id', existing.id)
+      } else {
+        await supabase
+          .from('review_interactions')
+          .delete()
+          .eq('id', existing.id)
+      }
 
       await supabase.from('reviews').update(updateData).eq('id', reviewId)
     } else {
