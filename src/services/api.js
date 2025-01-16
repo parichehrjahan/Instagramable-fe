@@ -232,50 +232,150 @@ export const checkUserInteraction = async (reviewId) => {
   }
 }
 
-export const toggleReviewInteraction = async (reviewId, isLiked) => {
-  try {
-    const { data: existingInteraction } = await supabase
-      .from('review_interactions')
-      .select('is_liked')
-      .eq('review_id', reviewId)
-      .single()
+export const toggleReviewInteraction = async (reviewId, isLiked, spotId) => {
+  const getNewIsLiked = (existing, isLiked) => {
+    if (isLiked) {
+      return existing.is_liked ? null : true
+    } else {
+      return existing.is_liked ? false : null
+    }
+  }
 
-    if (existingInteraction) {
-      if (existingInteraction.is_liked === isLiked) {
-        // Remove interaction if clicking the same button
-        await supabase
-          .from('review_interactions')
-          .delete()
-          .eq('review_id', reviewId)
-      } else {
-        // Update existing interaction
-        await supabase
-          .from('review_interactions')
-          .update({ is_liked: isLiked })
-          .eq('review_id', reviewId)
+  const getNewLikeDislikeCount = (currentReview, isLiked, existing) => {
+    const existingLikeCount = currentReview.like_count ?? 0
+    const existingDislikeCount = currentReview.dislike_count ?? 0
+
+    console.log('existing', existing.is_liked)
+    console.log('isLiked', isLiked)
+
+    if (existing) {
+      if (isLiked && existing.is_liked) {
+        return {
+          like_count: existingLikeCount - 1,
+          dislike_count: existingDislikeCount,
+        }
+      } else if (isLiked && !existing.is_liked) {
+        return {
+          like_count: existingLikeCount + 1,
+          dislike_count: existingDislikeCount - 1,
+        }
+      } else if (!isLiked && existing.is_liked) {
+        return {
+          like_count: existingLikeCount - 1,
+          dislike_count: existingDislikeCount + 1,
+        }
+      } else if (!isLiked && !existing.is_liked) {
+        return {
+          like_count: existingLikeCount,
+          dislike_count: existingDislikeCount - 1,
+        }
       }
+    } else {
+      return {
+        like_count: existingLikeCount + (isLiked ? 1 : 0),
+        dislike_count: existingDislikeCount + (isLiked ? 0 : 1),
+      }
+    }
+  }
+
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) throw new Error('User not authenticated')
+
+    console.log('user', user)
+
+    // First, try to get existing interaction
+    const { data: existing } = await supabase
+      .from('review_interactions')
+      .select('*')
+      .eq('review_id', reviewId)
+      .eq('user_id', user.id)
+      .eq('spot_id', spotId)
+      .maybeSingle()
+
+    console.log('existing interaction', existing)
+
+    const currentReview = await supabase
+      .from('reviews')
+      .select('like_count, dislike_count')
+      .eq('id', reviewId)
+      .maybeSingle()
+
+    if (existing) {
+      // Update existing interaction
+
+      const updateData = getNewLikeDislikeCount(
+        currentReview,
+        isLiked,
+        existing
+      )
+
+      const newIsLiked = getNewIsLiked(existing, isLiked)
+
+      console.log('newIsLiked', newIsLiked)
+
+      await supabase
+        .from('review_interactions')
+        .update({ is_liked: newIsLiked })
+        .eq('id', existing.id)
+
+      console.log('updateData', updateData)
+
+      await supabase.from('reviews').update(updateData).eq('id', reviewId)
     } else {
       // Create new interaction
       await supabase.from('review_interactions').insert({
         review_id: reviewId,
+        user_id: user.id,
         is_liked: isLiked,
+        spot_id: spotId,
       })
+
+      await supabase
+        .from('reviews')
+        .update({
+          like_count: isLiked
+            ? (currentReview.like_count ?? 0) + 1
+            : currentReview.like_count,
+          dislike_count: isLiked
+            ? currentReview.dislike_count
+            : (currentReview.dislike_count ?? 0) + 1,
+        })
+        .eq('id', reviewId)
     }
 
-    // Get updated counts
-    const { data: counts, error: countsError } = await supabase.rpc(
-      'get_review_counts',
-      { review_id: reviewId }
-    )
+    return true
+  } catch (error) {
+    console.error('Error in toggleReviewInteraction:', error)
+    throw error
+  }
+}
 
-    if (countsError) throw countsError
+// Function to get review counts
+export const getReviewCounts = async (reviewId) => {
+  try {
+    const { data: likes, error: likesError } = await supabase
+      .from('review_interactions')
+      .select('id')
+      .eq('review_id', reviewId)
+      .eq('is_liked', true)
+
+    const { data: dislikes, error: dislikesError } = await supabase
+      .from('review_interactions')
+      .select('id')
+      .eq('review_id', reviewId)
+      .eq('is_liked', false)
+
+    if (likesError || dislikesError) throw likesError || dislikesError
 
     return {
-      success: true,
-      data: counts,
+      likes: likes?.length || 0,
+      dislikes: dislikes?.length || 0,
     }
   } catch (error) {
-    console.error('Error toggling review interaction:', error)
-    return { success: false, error: error.message }
+    console.error('Error in getReviewCounts:', error)
+    throw error
   }
 }

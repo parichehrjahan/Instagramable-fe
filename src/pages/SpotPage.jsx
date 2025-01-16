@@ -1,81 +1,36 @@
 import { useParams } from 'react-router'
-import { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import {
-  getSpotById,
-  getReviewsBySpotId,
-  getSpotImages,
-  createReview,
-} from '@/services/api'
+import { getSpotById } from '@/services/api'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import ReviewForm from '@/components/ReviewForm'
 import ReviewInteractions from '@/components/ReviewInteraction'
 import SpotReview from '@/components/SpotReview'
+import { useState } from 'react'
+import { Skeleton } from '@/components/ui/skeleton'
 
 const SpotPage = () => {
   const { id } = useParams()
-  const [spot, setSpot] = useState(null)
-  const [spotImages, setSpotImages] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
   const [currentImage, setCurrentImage] = useState(0)
-  const [reviews, setReviews] = useState([])
+  const queryClient = useQueryClient()
 
   // Fetch spot data
-  useEffect(() => {
-    const fetchSpot = async () => {
-      try {
-        const response = await getSpotById(id)
-        if (response.success) {
-          setSpot(response.data)
-        } else {
-          setError('Failed to fetch spot details')
-        }
-      } catch (err) {
-        setError(err.message)
-      } finally {
-        setLoading(false)
-      }
-    }
+  const {
+    data: spot,
+    isLoading: spotLoading,
+    error: spotError,
+  } = useQuery({
+    queryKey: ['spot', id],
+    queryFn: async () => {
+      const response = await getSpotById(id)
+      if (!response.success) throw new Error('Failed to fetch spot details')
+      return response.data
+    },
+  })
 
-    fetchSpot()
-  }, [id])
-
-  // New useEffect to fetch images
-  useEffect(() => {
-    const fetchSpotImages = async () => {
-      try {
-        const response = await getSpotImages(id)
-        if (response.success) {
-          setSpotImages(response.data)
-        }
-      } catch (error) {
-        console.error('Error fetching spot images:', error)
-      }
-    }
-
-    if (id) {
-      fetchSpotImages()
-    }
-  }, [id])
-
-  // New useEffect for reviews
-  useEffect(() => {
-    const fetchReviews = async () => {
-      try {
-        const response = await getReviewsBySpotId(id)
-        if (response.success) {
-          setReviews(response.data)
-        }
-      } catch (error) {
-        console.error('Error fetching reviews:', error)
-      }
-    }
-
-    if (id) {
-      fetchReviews()
-    }
-  }, [id])
+  const spotImages = spot?.spot_images
+  const reviews = spot?.reviews
+  const userReviewInteractions = spot?.user_review_interaction
 
   const nextImage = (e) => {
     e.stopPropagation()
@@ -89,17 +44,42 @@ const SpotPage = () => {
     )
   }
 
-  const handleReviewClick = () => {
-    // TODO: Implement review modal/popup
-    console.log('Open review modal')
-  }
-
   const handleReviewSubmitted = (newReview) => {
-    setReviews((prev) => [newReview, ...prev])
+    // React Query will automatically refetch the reviews
+    queryClient.invalidateQueries(['reviews', id])
   }
 
-  if (loading) return <div>Loading...</div>
-  if (error) return <div>Error: {error}</div>
+  const sortedReviews =
+    reviews?.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at)) ||
+    []
+
+  if (spotLoading)
+    return (
+      <div className="max-w-4xl mx-auto p-4 space-y-6">
+        {/* Image skeleton */}
+        <Skeleton className="h-[400px] w-full rounded-lg" />
+
+        {/* Title and rating skeleton */}
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-6 w-24" />
+        </div>
+
+        {/* Description skeleton */}
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-20 w-full" />
+        </div>
+
+        {/* Reviews skeleton */}
+        <div className="space-y-4">
+          <Skeleton className="h-32 w-full" />
+          <Skeleton className="h-32 w-full" />
+          <Skeleton className="h-32 w-full" />
+        </div>
+      </div>
+    )
+  if (spotError) return <div>Error: {spotError.message}</div>
   if (!spot) return <div>Spot not found</div>
 
   return (
@@ -108,7 +88,7 @@ const SpotPage = () => {
         {spotImages && spotImages.length > 0 ? (
           <>
             <img
-              src={spotImages[currentImage]}
+              src={spotImages[currentImage].image_url}
               alt={spot.name}
               className="w-full h-full object-cover rounded-lg"
             />
@@ -169,12 +149,12 @@ const SpotPage = () => {
           <div className="mt-6">
             <h2 className="font-semibold mb-4">Reviews</h2>
             <div className="space-y-4">
-              {reviews.length === 0 ? (
+              {sortedReviews.length === 0 ? (
                 <Card className="p-4">
                   <p className="text-muted-foreground">No reviews yet</p>
                 </Card>
               ) : (
-                reviews.map((review) => (
+                sortedReviews.map((review) => (
                   <Card key={review.id} className="p-4">
                     <div className="flex justify-between items-start">
                       <div className="space-y-2">
@@ -183,7 +163,10 @@ const SpotPage = () => {
                           {new Date(review.created_at).toLocaleDateString()}
                         </p>
                       </div>
-                      <ReviewInteractions review={review} />
+                      <ReviewInteractions
+                        review={review}
+                        userReviewInteractions={userReviewInteractions}
+                      />
                     </div>
                   </Card>
                 ))
