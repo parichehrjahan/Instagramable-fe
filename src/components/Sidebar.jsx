@@ -2,7 +2,7 @@ import { Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { useJsApiLoader, Autocomplete } from '@react-google-maps/api'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -28,17 +28,32 @@ const Sidebar = ({ onFilterChange, categories, loading, error }) => {
     libraries,
   })
 
+  const autocompleteRef = useRef(null)
+
+  const onLoad = useCallback((autocomplete) => {
+    autocompleteRef.current = autocomplete
+  }, [])
+
   const onPlaceChanged = useCallback(() => {
-    const place = autocomplete.getPlace()
-    if (place.geometry) {
-      setLocation({
+    const place = autocompleteRef.current?.getPlace()
+    if (place?.geometry) {
+      const newLocation = {
         lat: place.geometry.location.lat(),
         lng: place.geometry.location.lng(),
         address: place.formatted_address,
-      })
+      }
+      setLocation(newLocation)
       setSearchQuery(place.formatted_address)
+
+      // Trigger filter change with new location
+      onFilterChange({
+        categories: selectedCategories,
+        distance,
+        location: newLocation,
+        searchQuery: place.formatted_address,
+      })
     }
-  }, [])
+  }, [selectedCategories, distance, onFilterChange])
 
   const toggleCategory = (categoryId) => {
     const newCategories = selectedCategories.includes(categoryId)
@@ -68,7 +83,7 @@ const Sidebar = ({ onFilterChange, categories, loading, error }) => {
           <div className="relative">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             {isLoaded ? (
-              <Autocomplete onPlaceChanged={onPlaceChanged}>
+              <Autocomplete onLoad={onLoad} onPlaceChanged={onPlaceChanged}>
                 <Input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}

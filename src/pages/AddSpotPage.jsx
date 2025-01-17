@@ -1,12 +1,15 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Card } from '@/components/ui/card'
 import { createSpot } from '@/services/api'
-import { ImagePlus, X, Loader2 } from 'lucide-react'
+import { ImagePlus, X, Loader2, Search } from 'lucide-react'
 import supabase from '@/lib/supabaseClient'
+import { useJsApiLoader, Autocomplete } from '@react-google-maps/api'
+
+const libraries = ['places']
 
 const AddSpotPage = () => {
   const navigate = useNavigate()
@@ -14,12 +17,38 @@ const AddSpotPage = () => {
     name: '',
     description: '',
     location: '',
+    latitude: null,
+    longitude: null,
   })
   const [images, setImages] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [availableCategories, setAvailableCategories] = useState([])
   const [selectedCategories, setSelectedCategories] = useState([])
+
+  const autocompleteRef = useRef(null)
+
+  const { isLoaded } = useJsApiLoader({
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+    libraries,
+  })
+
+  const onLoad = useCallback((autocomplete) => {
+    autocompleteRef.current = autocomplete
+  }, [])
+
+  const onPlaceChanged = useCallback(() => {
+    const place = autocompleteRef.current?.getPlace()
+
+    if (place?.geometry) {
+      setFormData((prev) => ({
+        ...prev,
+        location: place.formatted_address,
+        latitude: place.geometry.location.lat(),
+        longitude: place.geometry.location.lng(),
+      }))
+    }
+  }, [])
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -134,37 +163,17 @@ const AddSpotPage = () => {
       const uploadPromises = images.map(uploadImage)
       const imageUrls = await Promise.all(uploadPromises)
 
-      // Create the spot
-      const { data: spot, error: spotError } = await supabase
-        .from('spots')
-        .insert([
-          {
-            name: formData.name,
-            description: formData.description,
-            location: formData.location,
-            // ... other spot fields
-          },
-        ])
-        .select()
-        .single()
+      const spot = await createSpot({
+        name: formData.name,
+        description: formData.description,
+        location: formData.location,
+        latitude: formData.latitude,
+        longitude: formData.longitude,
+        imageURLs: imageUrls,
+        categories: selectedCategories,
+      })
 
-      if (spotError) throw spotError
-
-      // Insert category relationships
-      if (selectedCategories.length > 0) {
-        const categoryRelations = selectedCategories.map((categoryId) => ({
-          spot_id: spot.id,
-          category_id: categoryId,
-        }))
-
-        const { error: categoryError } = await supabase
-          .from('spot_categories')
-          .insert(categoryRelations)
-
-        if (categoryError) throw categoryError
-      }
-
-      navigate(`/spot/${spot.id}`)
+      navigate(`/spot/${spot.data}`)
     } catch (error) {
       console.error('Error creating spot:', error)
       setError(error.message)
@@ -252,15 +261,33 @@ const AddSpotPage = () => {
               >
                 Location *
               </label>
-              <Input
-                id="location"
-                value={formData.location}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, location: e.target.value }))
-                }
-                placeholder="Enter location"
-                required
-              />
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                {isLoaded ? (
+                  <Autocomplete onLoad={onLoad} onPlaceChanged={onPlaceChanged}>
+                    <Input
+                      name="location"
+                      value={formData.location}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          location: e.target.value,
+                        }))
+                      }
+                      placeholder="Search location..."
+                      className="pl-8"
+                      required
+                    />
+                  </Autocomplete>
+                ) : (
+                  <Input disabled placeholder="Loading..." className="pl-8" />
+                )}
+              </div>
+              {formData.latitude && formData.longitude && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  Selected: {formData.location}
+                </p>
+              )}
             </div>
 
             <div>
