@@ -11,6 +11,7 @@ import Layout from '@/components/Layout'
 import AddSpotPage from '@/pages/AddSpotPage.jsx'
 
 import './index.css'
+import 'leaflet/dist/leaflet.css'
 
 const queryClient = new QueryClient({
   defaultOptions: {

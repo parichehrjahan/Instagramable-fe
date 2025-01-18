@@ -24,7 +24,6 @@ const SpotPage = () => {
     queryFn: async () => {
       const response = await getSpotById(id)
       if (!response.success) throw new Error('Failed to fetch spot details')
-      console.log(response)
       return response.data
     },
   })

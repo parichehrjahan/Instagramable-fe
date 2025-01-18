@@ -33,6 +33,7 @@ const SpotGridSkeleton = () => (
 )
 
 const HomePage = () => {
+  const [spots, setSpots] = useState([])
   const [filteredSpots, setFilteredSpots] = useState([])
 
   const {
@@ -69,44 +70,61 @@ const HomePage = () => {
     )
   }, [])
 
-  const handleFilterChange = useCallback(
-    ({ location, distance, categories, userLocation }) => {
-      if (!spotsData) return
+  const handleFilterChange = ({
+    categories,
+    distance,
+    location,
+    searchQuery,
+  }) => {
+    if (!Array.isArray(spots)) {
+      console.error('Spots data is not an array:', spots)
+      return
+    }
 
-      setFilteredSpots((currentSpots) => {
-        let filtered = [...spotsData]
+    let filtered = [...spots]
 
-        if (location) {
-          filtered = filtered.filter((spot) =>
-            spot.address.toLowerCase().includes(location.toLowerCase())
-          )
-        }
+    // Filter by location and distance if both are provided
+    if (location && distance) {
+      filtered = filtered.filter((spot) => {
+        if (!spot.latitude || !spot.longitude) return false
 
-        if (userLocation && distance) {
-          filtered = filtered.filter((spot) => {
-            const spotDistance = calculateDistance(
-              userLocation.lat,
-              userLocation.lng,
-              spot.latitude,
-              spot.longitude
-            )
-            return spotDistance <= distance
-          })
-        }
+        // Calculate distance using Haversine formula
+        const R = 6371 // Earth's radius in kilometers
+        const lat1 = (location.lat * Math.PI) / 180
+        const lon1 = (location.lng * Math.PI) / 180
+        const lat2 = (spot.latitude * Math.PI) / 180
+        const lon2 = (spot.longitude * Math.PI) / 180
 
-        if (categories && categories.length > 0) {
-          filtered = filtered.filter((spot) =>
-            spot.spot_categories.some((sc) =>
-              categories.includes(sc.category_id)
-            )
-          )
-        }
+        const dLat = lat2 - lat1
+        const dLon = lon2 - lon1
 
-        return filtered
+        const a =
+          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(lat1) *
+            Math.cos(lat2) *
+            Math.sin(dLon / 2) *
+            Math.sin(dLon / 2)
+
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+        const d = R * c // Distance in kilometers
+
+        return d <= distance
       })
-    },
-    [spotsData]
-  )
+    }
+
+    // Keep existing search query filter
+    if (searchQuery?.trim()) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter(
+        (spot) =>
+          (spot?.name || '').toLowerCase().includes(query) ||
+          (spot?.description || '').toLowerCase().includes(query) ||
+          (spot?.location || '').toLowerCase().includes(query)
+      )
+    }
+
+    setFilteredSpots(filtered)
+  }
 
   if (loading) {
     return (
