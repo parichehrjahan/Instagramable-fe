@@ -109,13 +109,18 @@ const Sidebar = ({ onFilterChange, categories, loading, error, spots }) => {
 
   return (
     <>
-      <aside className="w-64 border-r h-screen fixed left-0 top-0 z-50 bg-white overflow-y-auto">
-        <div className="p-4">
-          <h1 className="text-4xl" style={{ fontFamily: "'Satisfy', cursive" }}>
-            Instagramable
-          </h1>
-        </div>
+      <aside
+        className={`w-64 border-r h-screen fixed left-0 top-0 z-50 overflow-y-auto transition-colors duration-200 ${isFullScreenMapOpen ? 'bg-black/20 backdrop-blur-md border-white/10' : 'bg-white'}`}
+      >
         <div className="p-4 space-y-4">
+          <div className="space-y-2">
+            <h1
+              className="text-4xl"
+              style={{ fontFamily: "'Satisfy', cursive" }}
+            >
+              Instagramable
+            </h1>
+          </div>
           <div className="space-y-2">
             <h3 className="text-lg font-semibold">Location</h3>
             <div className="relative">
@@ -159,22 +164,33 @@ const Sidebar = ({ onFilterChange, categories, loading, error, spots }) => {
           </div>
 
           <div className="space-y-2">
-            <h3 className="text-lg font-semibold">Categories</h3>
+            <h3
+              className={`text-lg font-semibold ${isFullScreenMapOpen ? 'text-white' : ''}`}
+            >
+              Categories
+            </h3>
             {loading ? (
-              <CategorySkeleton />
-            ) : error ? (
-              <div className="text-sm text-red-500">{error}</div>
+              <div className="flex flex-wrap gap-1.5">
+                {[...Array(6)].map((_, i) => (
+                  <Skeleton key={i} className="h-6 w-16 rounded-full" />
+                ))}
+              </div>
             ) : (
-              <div className="flex flex-wrap gap-2">
-                {categories.map((category) => (
+              <div className="flex flex-wrap gap-1.5">
+                {categories?.map((category) => (
                   <Button
                     key={category.id}
                     variant={
                       selectedCategories.includes(category.id)
                         ? 'default'
-                        : 'outline'
+                        : 'secondary'
                     }
-                    className="rounded-full"
+                    className={`rounded-full text-xs h-6 px-2.5 min-w-0 ${
+                      isFullScreenMapOpen &&
+                      !selectedCategories.includes(category.id)
+                        ? 'bg-white/10 hover:bg-white/20 text-white'
+                        : ''
+                    }`}
                     onClick={() => toggleCategory(category.id)}
                   >
                     {category.name}
@@ -185,59 +201,63 @@ const Sidebar = ({ onFilterChange, categories, loading, error, spots }) => {
           </div>
 
           <div className="space-y-2">
-            <Button
-              className="w-full flex items-center gap-2"
-              onClick={() => setIsFullScreenMapOpen(true)}
+            <h3
+              className={`text-lg font-semibold ${isFullScreenMapOpen ? 'text-white' : ''}`}
             >
-              <Map className="h-4 w-4" />
-              Open Map Review
-            </Button>
-          </div>
-
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold">Map Preview</h3>
-            <div className="h-[300px] rounded-lg overflow-hidden">
-              <MapContainer
-                center={userLocation || [-6.2088, 106.8456]}
-                zoom={13}
-                style={{ height: '100%', width: '100%' }}
-                zoomControl={false}
+              Map Preview
+            </h3>
+            <div className="space-y-2">
+              <Button
+                className="w-full flex items-center justify-center gap-2"
+                onClick={() => setIsFullScreenMapOpen(true)}
+                variant="default"
               >
-                <TileLayer
-                  attribution='&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>'
-                  url="https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png"
-                  className="map-tiles"
-                />
-                {spots?.map(
-                  (spot) =>
-                    spot.latitude &&
-                    spot.longitude && (
-                      <Marker
-                        key={spot.id}
-                        position={[
-                          parseFloat(spot.latitude),
-                          parseFloat(spot.longitude),
-                        ]}
-                        icon={customIcon}
-                      >
-                        <Popup className="custom-popup">
-                          <div className="p-2">
-                            <h3 className="font-semibold">{spot.name}</h3>
-                            <p className="text-sm text-gray-600">
-                              {spot.description}
-                            </p>
-                          </div>
-                        </Popup>
-                      </Marker>
-                    )
-                )}
-                {location && (
-                  <Marker
-                    position={[location.lat, location.lng]}
-                    icon={customIcon}
+                <Map className="h-4 w-4" />
+                Open Map Review
+              </Button>
+              <div className="h-[300px] rounded-lg overflow-hidden">
+                <MapContainer
+                  center={userLocation || [-6.2088, 106.8456]}
+                  zoom={13}
+                  style={{ height: '100%', width: '100%' }}
+                  zoomControl={false}
+                >
+                  <TileLayer
+                    attribution='&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>'
+                    url="https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png"
+                    className="map-tiles"
                   />
-                )}
-              </MapContainer>
+                  {spots?.map(
+                    (spot) =>
+                      spot.latitude &&
+                      spot.longitude && (
+                        <Marker
+                          key={spot.id}
+                          position={[
+                            parseFloat(spot.latitude),
+                            parseFloat(spot.longitude),
+                          ]}
+                          icon={customIcon}
+                        >
+                          <Popup className="custom-popup">
+                            <div className="p-2">
+                              <h3 className="font-semibold">{spot.name}</h3>
+                              <p className="text-sm text-gray-600">
+                                {spot.description}
+                              </p>
+                            </div>
+                          </Popup>
+                        </Marker>
+                      )
+                  )}
+                  {location && (
+                    <Marker
+                      position={[location.lat, location.lng]}
+                      icon={customIcon}
+                    />
+                  )}
+                </MapContainer>
+              </div>
             </div>
           </div>
         </div>
@@ -247,6 +267,7 @@ const Sidebar = ({ onFilterChange, categories, loading, error, spots }) => {
         spots={spots || []}
         isOpen={isFullScreenMapOpen}
         onClose={() => setIsFullScreenMapOpen(false)}
+        setUserLocation={setUserLocation}
       />
     </>
   )
