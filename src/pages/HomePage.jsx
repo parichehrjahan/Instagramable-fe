@@ -9,6 +9,8 @@ import SpotGrid from '@/components/SpotGrid'
 import { calculateDistance } from '@/lib/utils'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useQuery } from '@tanstack/react-query'
+import FullScreenMap from '@/components/ui/FullScreenMap'
+import { useHeader } from '@/contexts/HeaderContext'
 
 const SpotCardSkeleton = () => (
   <div className="overflow-hidden rounded-lg">
@@ -35,6 +37,7 @@ const SpotGridSkeleton = () => (
 const HomePage = () => {
   const [spots, setSpots] = useState([])
   const [filteredSpots, setFilteredSpots] = useState([])
+  const { isFullScreenMapOpen, setIsFullScreenMapOpen } = useHeader()
 
   const {
     data: spotsData,
@@ -126,6 +129,10 @@ const HomePage = () => {
     setFilteredSpots(filtered)
   }
 
+  const handleViewChange = (isMapView) => {
+    setIsFullScreenMapOpen(isMapView)
+  }
+
   if (loading) {
     return (
       <>
@@ -134,6 +141,8 @@ const HomePage = () => {
           categories={[]}
           loading={loading}
           error={error}
+          isFullScreenMapOpen={isFullScreenMapOpen}
+          onViewChange={handleViewChange}
         />
         <div className="flex-1 ml-64">
           <SpotGridSkeleton />
@@ -157,13 +166,24 @@ const HomePage = () => {
         categories={categoriesData}
         loading={loading}
         error={error}
+        spots={spotsData}
+        isFullScreenMapOpen={isFullScreenMapOpen}
+        onViewChange={handleViewChange}
       />
       <div className="flex-1 ml-64">
-        <SpotGrid
-          spots={filteredSpots.length > 0 ? filteredSpots : spotsData}
-          savedSpotIds={savedSpotsData}
-          onSaveToggle={handleSaveToggle}
-        />
+        {isFullScreenMapOpen ? (
+          <FullScreenMap
+            spots={spotsData || []}
+            isOpen={true}
+            onClose={() => setIsFullScreenMapOpen(false)}
+          />
+        ) : (
+          <SpotGrid
+            spots={filteredSpots.length > 0 ? filteredSpots : spotsData}
+            savedSpotIds={savedSpotsData}
+            onSaveToggle={handleSaveToggle}
+          />
+        )}
       </div>
     </>
   )

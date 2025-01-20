@@ -75,8 +75,8 @@ const FullScreenMap = ({
       : defaultCenter)
 
   return (
-    <div className="fixed inset-0 z-40 bg-black pl-64">
-      <div className="absolute top-0 left-64 right-0 bg-white/10 backdrop-blur-md z-[1000] px-4 py-2 flex items-center justify-between">
+    <div className="fixed inset-0 z-40">
+      <div className="absolute top-0 left-64 right-0 backdrop-blur-md z-[1000] px-4 py-2 flex items-center justify-between border-b border-white/10">
         <div className="flex-1" />
         <div className="flex items-center gap-2">
           {userLocation && (
@@ -108,7 +108,7 @@ const FullScreenMap = ({
       <MapContainer
         center={initialCenter}
         zoom={13}
-        style={{ height: '100vh', width: '100%' }}
+        style={{ height: '100vh', width: '100vw' }}
         zoomControl={false}
         bounds={bounds.length > 0 ? bounds : undefined}
       >

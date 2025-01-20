@@ -9,7 +9,7 @@ import HomePage from '@/pages/HomePage.jsx'
 import SpotPage from '@/pages/SpotPage.jsx'
 import Layout from '@/components/Layout'
 import AddSpotPage from '@/pages/AddSpotPage.jsx'
-
+import { HeaderProvider } from '@/contexts/HeaderContext'
 import './index.css'
 import 'leaflet/dist/leaflet.css'
 
@@ -26,15 +26,17 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <UserProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route element={<Layout />}>
-              <Route index element={<HomePage />} />
-              <Route path="/spot/:id" element={<SpotPage />} />
-              <Route path="/add-spot" element={<AddSpotPage />} />
-            </Route>
-          </Routes>
-        </BrowserRouter>
+        <HeaderProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route element={<Layout />}>
+                <Route index element={<HomePage />} />
+                <Route path="/spot/:id" element={<SpotPage />} />
+                <Route path="/add-spot" element={<AddSpotPage />} />
+              </Route>
+            </Routes>
+          </BrowserRouter>
+        </HeaderProvider>
       </UserProvider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>

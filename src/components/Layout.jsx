@@ -3,10 +3,12 @@ import Header from '@/components/Header'
 import { Auth } from '@supabase/auth-ui-react'
 import { ThemeSupa } from '@supabase/auth-ui-shared'
 import { useUser } from '@/contexts/UserContext'
+import { useHeader } from '@/contexts/HeaderContext'
 import supabase from '@/lib/supabaseClient'
 
 const Layout = () => {
   const { session, loading } = useUser()
+  const { isFullScreenMapOpen } = useHeader()
 
   if (loading) {
     return null
@@ -28,8 +30,8 @@ const Layout = () => {
 
   return (
     <div>
-      <Header />
-      <main className="p-4">
+      {!isFullScreenMapOpen && <Header />}
+      <main className={!isFullScreenMapOpen ? 'p-4' : ''}>
         <Outlet />
       </main>
     </div>
