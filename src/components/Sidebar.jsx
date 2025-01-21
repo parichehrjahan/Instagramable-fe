@@ -241,28 +241,28 @@ const Sidebar = ({
           >
             {isFullScreenMapOpen ? 'Spots Preview' : 'Map Preview'}
           </h3>
-          <div className="space-y-2">
-            <Button
-              className={`w-full flex items-center justify-center gap-2 ${
-                isFullScreenMapOpen
-                  ? 'bg-gray-600/50 hover:bg-gray-600/70 border-gray-600'
-                  : ''
-              }`}
-              onClick={() => onViewChange(!isFullScreenMapOpen)}
-              variant="default"
-            >
-              {isFullScreenMapOpen ? (
-                <>
-                  <LayoutGrid className="h-4 w-4" />
-                  Open Spot Page
-                </>
-              ) : (
-                <>
-                  <Map className="h-4 w-4" />
-                  Open Map Review
-                </>
-              )}
-            </Button>
+          <Button
+            className={`w-full flex items-center justify-center gap-2 ${
+              isFullScreenMapOpen
+                ? 'bg-gray-600/50 hover:bg-gray-600/70 border-gray-600'
+                : ''
+            }`}
+            onClick={() => onViewChange(!isFullScreenMapOpen)}
+            variant="default"
+          >
+            {isFullScreenMapOpen ? (
+              <>
+                <LayoutGrid className="h-4 w-4" />
+                Open Spot Page
+              </>
+            ) : (
+              <>
+                <Map className="h-4 w-4" />
+                Open Map Review
+              </>
+            )}
+          </Button>
+          {!isFullScreenMapOpen && (
             <div className="h-[300px] rounded-lg overflow-hidden">
               <MapContainer
                 center={userLocation || [-6.2088, 106.8456]}
@@ -306,7 +306,7 @@ const Sidebar = ({
                 )}
               </MapContainer>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </aside>
