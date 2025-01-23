@@ -174,7 +174,7 @@ const HomePage = () => {
         {isFullScreenMapOpen ? (
           <FullScreenMap
             spots={spotsData || []}
-            isOpen={true}
+            isOpen={isFullScreenMapOpen}
             onClose={() => setIsFullScreenMapOpen(false)}
           />
         ) : (

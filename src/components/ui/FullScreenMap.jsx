@@ -4,6 +4,7 @@ import {
   Marker,
   Popup,
   ZoomControl,
+  useMap,
 } from 'react-leaflet'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -30,48 +31,40 @@ const defaultCenter = [-6.2088, 106.8456] // Fallback center
 
 const SpotPopup = ({ spot }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
-  console.log('Spot data in popup:', spot)
 
-  // Handle different possible image data structures
-  const images =
-    spot.images || [spot.image_url] || [spot.imageUrl] || [spot.photo] || [
-      spot.photos,
-    ] ||
-    []
-
-  // Filter out any null/undefined values and ensure we have valid URLs
-  const validImages = images.filter((img) => img && typeof img === 'string')
-
-  console.log('Valid images:', validImages)
+  // Get images from the spot data structure
+  const images = spot.photos || []
+  console.log('Spot data:', spot)
+  console.log('Images:', images)
 
   return (
     <div className="p-2 min-w-[300px]">
       <h3 className="font-semibold text-lg mb-2">{spot.name}</h3>
 
-      {validImages.length > 0 ? (
+      {images.length > 0 ? (
         <div className="relative mb-3">
           <div className="relative h-48 w-full overflow-hidden rounded-lg">
             <img
-              src={validImages[currentImageIndex]}
+              src={images[currentImageIndex]}
               alt={`${spot.name} - Image ${currentImageIndex + 1}`}
               className="h-full w-full object-cover"
               onError={(e) => {
                 console.error(
                   'Image failed to load:',
-                  validImages[currentImageIndex]
+                  images[currentImageIndex]
                 )
-                e.target.src = '/placeholder-image.jpg' // Add a fallback image
+                e.target.src = '/placeholder-image.jpg'
               }}
             />
           </div>
 
-          {validImages.length > 1 && (
+          {images.length > 1 && (
             <>
               <button
                 onClick={(e) => {
                   e.stopPropagation()
                   setCurrentImageIndex((prev) =>
-                    prev === 0 ? validImages.length - 1 : prev - 1
+                    prev === 0 ? images.length - 1 : prev - 1
                   )
                 }}
                 className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-1 text-white hover:bg-black/70"
@@ -82,7 +75,7 @@ const SpotPopup = ({ spot }) => {
                 onClick={(e) => {
                   e.stopPropagation()
                   setCurrentImageIndex((prev) =>
-                    prev === validImages.length - 1 ? 0 : prev + 1
+                    prev === images.length - 1 ? 0 : prev + 1
                   )
                 }}
                 className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-1 text-white hover:bg-black/70"
@@ -90,7 +83,7 @@ const SpotPopup = ({ spot }) => {
                 <ChevronRight className="h-5 w-5" />
               </button>
               <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
-                {validImages.map((_, index) => (
+                {images.map((_, index) => (
                   <div
                     key={index}
                     className={`h-1.5 w-1.5 rounded-full transition-colors ${
@@ -118,16 +111,39 @@ const SpotPopup = ({ spot }) => {
   )
 }
 
-const SpotMarker = ({ spot }) => {
-  const markerRef = useRef(null)
+// Map bounds controller component
+const MapBoundsController = ({ spots }) => {
+  const map = useMap()
 
   useEffect(() => {
-    // Open popup after the marker is mounted
-    const marker = markerRef.current
-    if (marker) {
-      marker.openPopup()
+    if (spots && spots.length > 0) {
+      const bounds = L.latLngBounds(
+        spots.map((spot) => [
+          parseFloat(spot.latitude),
+          parseFloat(spot.longitude),
+        ])
+      )
+      map.fitBounds(bounds, { padding: [50, 50] })
     }
-  }, [])
+  }, [spots, map])
+
+  return null
+}
+
+const SpotMarker = ({ spot }) => {
+  const markerRef = useRef(null)
+  const map = useMap()
+
+  useEffect(() => {
+    const marker = markerRef.current
+    if (marker && marker.getElement()) {
+      // Wait for the marker to be properly mounted
+      const timer = setTimeout(() => {
+        marker.openPopup()
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+  }, [markerRef.current]) // Only run when marker ref changes
 
   const position = [parseFloat(spot.latitude), parseFloat(spot.longitude)]
 
@@ -135,7 +151,9 @@ const SpotMarker = ({ spot }) => {
     <Marker ref={markerRef} position={position} icon={createPinIcon('#FF4136')}>
       <Popup
         className="custom-popup"
-        closeButton={false} // Optional: removes the close button
+        closeButton={false}
+        closeOnClick={false} // Prevent closing when clicking the map
+        autoClose={false} // Prevent auto-closing when another popup opens
       >
         <SpotPopup spot={spot} />
       </Popup>
@@ -145,7 +163,6 @@ const SpotMarker = ({ spot }) => {
 
 const FullScreenMap = ({ spots = [], isOpen, onClose }) => {
   const [userLocation, setUserLocation] = useState(null)
-  const mapRef = useRef(null)
 
   useEffect(() => {
     if ('geolocation' in navigator) {
@@ -159,22 +176,6 @@ const FullScreenMap = ({ spots = [], isOpen, onClose }) => {
       )
     }
   }, [])
-
-  useEffect(() => {
-    // Adjust map bounds to fit all markers
-    if (mapRef.current && spots.length > 0) {
-      const validSpots = spots.filter(
-        (spot) => spot?.latitude && spot?.longitude
-      )
-      if (validSpots.length > 0) {
-        const bounds = validSpots.map((spot) => [
-          parseFloat(spot.latitude),
-          parseFloat(spot.longitude),
-        ])
-        mapRef.current.fitBounds(bounds)
-      }
-    }
-  }, [spots])
 
   if (!isOpen) return null
 
@@ -219,12 +220,12 @@ const FullScreenMap = ({ spots = [], isOpen, onClose }) => {
       </div>
 
       <MapContainer
-        ref={mapRef}
         center={initialCenter}
         zoom={13}
         style={{ height: '100vh', width: '100vw' }}
         zoomControl={false}
       >
+        <MapBoundsController spots={validSpots} />
         <ZoomControl position="bottomright" />
         <TileLayer
           attribution='&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>'
@@ -247,61 +248,58 @@ const FullScreenMap = ({ spots = [], isOpen, onClose }) => {
         ))}
       </MapContainer>
 
-      <style>
-        {`
-          .custom-popup .leaflet-popup-content-wrapper {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(8px);
-            border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            padding: 0;
-          }
+      <style>{`
+        .custom-popup .leaflet-popup-content-wrapper {
+          background: rgba(255, 255, 255, 0.95);
+          backdrop-filter: blur(8px);
+          border-radius: 12px;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+          padding: 0;
+        }
 
-          .custom-popup .leaflet-popup-content {
-            margin: 0;
-            min-width: 300px;
-          }
+        .custom-popup .leaflet-popup-content {
+          margin: 0;
+          min-width: 300px;
+        }
 
-          .custom-popup .leaflet-popup-tip {
-            background: rgba(255, 255, 255, 0.95);
-          }
+        .custom-popup .leaflet-popup-tip {
+          background: rgba(255, 255, 255, 0.95);
+        }
 
-          .map-tiles {
-            filter: saturate(1.2) contrast(1.1);
-          }
+        .map-tiles {
+          filter: saturate(1.2) contrast(1.1);
+        }
 
-          .leaflet-container {
-            font-family: system-ui, -apple-system, sans-serif;
-            padding-top: 64px;
-          }
+        .leaflet-container {
+          font-family: system-ui, -apple-system, sans-serif;
+          padding-top: 64px;
+        }
 
-          .custom-pin-icon {
-            background: none;
-            border: none;
-            filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.5));
-            transition: transform 0.2s, filter 0.2s;
-          }
+        .custom-pin-icon {
+          background: none;
+          border: none;
+          filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.5));
+          transition: transform 0.2s, filter 0.2s;
+        }
 
-          .custom-pin-icon:hover {
-            transform: scale(1.1) translateY(-5px);
-            filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.5));
-          }
+        .custom-pin-icon:hover {
+          transform: scale(1.1) translateY(-5px);
+          filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.5));
+        }
 
-          .leaflet-popup {
-            transition: transform 0.2s;
-          }
+        .leaflet-popup {
+          transition: transform 0.2s;
+        }
 
-          .leaflet-popup:hover {
-            transform: scale(1.02);
-          }
+        .leaflet-popup:hover {
+          transform: scale(1.02);
+        }
 
-          /* Adjust popup max-height to prevent overflow */
-          .leaflet-popup-content {
-            max-height: calc(100vh - 200px);
-            overflow-y: auto;
-          }
-        `}
-      </style>
+        .leaflet-popup-content {
+          max-height: calc(100vh - 200px);
+          overflow-y: auto;
+        }
+      `}</style>
     </div>
   )
 }
