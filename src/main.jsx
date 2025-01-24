@@ -12,6 +12,7 @@ import AddSpotPage from '@/pages/AddSpotPage.jsx'
 import { HeaderProvider } from '@/contexts/HeaderContext'
 import './index.css'
 import 'leaflet/dist/leaflet.css'
+import SavedSpots from '@/components/SavedSpots'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -33,6 +34,7 @@ createRoot(document.getElementById('root')).render(
                 <Route index element={<HomePage />} />
                 <Route path="/spot/:id" element={<SpotPage />} />
                 <Route path="/add-spot" element={<AddSpotPage />} />
+                <Route path="/saved-spots" element={<SavedSpots />} />
               </Route>
             </Routes>
           </BrowserRouter>

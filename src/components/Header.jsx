@@ -1,13 +1,23 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Bookmark, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { useNavigate } from 'react-router'
+import { useNavigate, useLocation } from 'react-router'
 
 const Header = () => {
   const navigate = useNavigate()
+  const location = useLocation()
+  const isOnSavedSpots = location.pathname === '/saved-spots'
 
   const handleAddSpot = () => {
     navigate('/add-spot')
+  }
+
+  const handleSavedSpotsToggle = () => {
+    if (isOnSavedSpots) {
+      navigate('/')
+    } else {
+      navigate('/saved-spots')
+    }
   }
 
   return (
@@ -32,7 +42,18 @@ const Header = () => {
           >
             <Plus className="h-6 w-6" />
           </Button>
-          <Bookmark className="h-8 w-8 cursor-pointer hover:opacity-80 transition-opacity text-black fill-current" />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleSavedSpotsToggle}
+            className="hover:bg-gray-100 p-2"
+          >
+            <Bookmark
+              className={`transform scale-150 cursor-pointer hover:opacity-80 transition-opacity text-black ${
+                isOnSavedSpots ? 'fill-current' : ''
+              }`}
+            />
+          </Button>
           <Avatar className="h-8 w-8 cursor-pointer hover:opacity-80 transition-opacity">
             <AvatarImage
               src="https://github.com/shadcn.png"
