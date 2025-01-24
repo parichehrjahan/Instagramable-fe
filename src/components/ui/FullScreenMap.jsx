@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router'
 
 // Create a custom pin icon
 const createPinIcon = (color = '#FF0000') =>
@@ -30,23 +31,27 @@ const createPinIcon = (color = '#FF0000') =>
 const defaultCenter = [-6.2088, 106.8456] // Fallback center
 
 const SpotPopup = ({ spot }) => {
+  const navigate = useNavigate()
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const images = spot.spot_images?.map((img) => img.image_url) || []
 
-  // Get images from the spot data structure
-  const images = spot.photos || []
-  console.log('Spot data:', spot)
-  console.log('Images:', images)
+  const handleClick = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    navigate(`/spot/${spot.id}`)
+  }
 
   return (
-    <div className="p-2 min-w-[300px]">
-      <h3 className="font-semibold text-lg mb-2">{spot.name}</h3>
-
+    <div
+      onClick={handleClick}
+      className="min-w-[120px] max-w-[150px] cursor-pointer hover:opacity-95 transition-opacity block"
+    >
       {images.length > 0 ? (
-        <div className="relative mb-3">
-          <div className="relative h-48 w-full overflow-hidden rounded-lg">
+        <div className="relative">
+          <div className="relative h-20 w-full overflow-hidden rounded-t-md">
             <img
               src={images[currentImageIndex]}
-              alt={`${spot.name} - Image ${currentImageIndex + 1}`}
+              alt={`${spot.name}`}
               className="h-full w-full object-cover"
               onError={(e) => {
                 console.error(
@@ -62,51 +67,42 @@ const SpotPopup = ({ spot }) => {
             <>
               <button
                 onClick={(e) => {
+                  e.preventDefault()
                   e.stopPropagation()
                   setCurrentImageIndex((prev) =>
                     prev === 0 ? images.length - 1 : prev - 1
                   )
                 }}
-                className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-1 text-white hover:bg-black/70"
+                className="absolute left-0.5 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-0.5 text-white hover:bg-black/70"
               >
-                <ChevronLeft className="h-5 w-5" />
+                <ChevronLeft className="h-3 w-3" />
               </button>
               <button
                 onClick={(e) => {
+                  e.preventDefault()
                   e.stopPropagation()
                   setCurrentImageIndex((prev) =>
                     prev === images.length - 1 ? 0 : prev + 1
                   )
                 }}
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-1 text-white hover:bg-black/70"
+                className="absolute right-0.5 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-0.5 text-white hover:bg-black/70"
               >
-                <ChevronRight className="h-5 w-5" />
+                <ChevronRight className="h-3 w-3" />
               </button>
-              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
-                {images.map((_, index) => (
-                  <div
-                    key={index}
-                    className={`h-1.5 w-1.5 rounded-full transition-colors ${
-                      currentImageIndex === index ? 'bg-white' : 'bg-white/50'
-                    }`}
-                  />
-                ))}
-              </div>
             </>
           )}
         </div>
       ) : (
-        <div className="bg-gray-100 h-48 w-full rounded-lg flex items-center justify-center mb-3">
-          <span className="text-gray-400">No image available</span>
+        <div className="bg-gray-100 h-20 w-full rounded-t-md flex items-center justify-center">
+          <span className="text-gray-400 text-xs">No image</span>
         </div>
       )}
 
-      <p className="text-sm text-gray-600 mb-2">{spot.description}</p>
-      {spot.location && (
-        <p className="text-xs text-gray-500 flex items-center gap-1">
-          <span>📍</span> {spot.location}
-        </p>
-      )}
+      <div className="bg-white p-1 rounded-b-md">
+        <h3 className="text-xs font-medium text-center truncate">
+          {spot.name}
+        </h3>
+      </div>
     </div>
   )
 }
@@ -132,28 +128,27 @@ const MapBoundsController = ({ spots }) => {
 
 const SpotMarker = ({ spot }) => {
   const markerRef = useRef(null)
-  const map = useMap()
+  const popupRef = useRef(null)
 
   useEffect(() => {
-    const marker = markerRef.current
-    if (marker && marker.getElement()) {
-      // Wait for the marker to be properly mounted
-      const timer = setTimeout(() => {
-        marker.openPopup()
-      }, 100)
-      return () => clearTimeout(timer)
+    // Open popup when marker is mounted
+    if (markerRef.current) {
+      markerRef.current.openPopup()
     }
-  }, [markerRef.current]) // Only run when marker ref changes
-
-  const position = [parseFloat(spot.latitude), parseFloat(spot.longitude)]
+  }, [])
 
   return (
-    <Marker ref={markerRef} position={position} icon={createPinIcon('#FF4136')}>
+    <Marker
+      ref={markerRef}
+      position={[parseFloat(spot.latitude), parseFloat(spot.longitude)]}
+      icon={createPinIcon('#FF4136')}
+    >
       <Popup
+        ref={popupRef}
         className="custom-popup"
         closeButton={false}
-        closeOnClick={false} // Prevent closing when clicking the map
-        autoClose={false} // Prevent auto-closing when another popup opens
+        autoClose={false}
+        closeOnClick={false}
       >
         <SpotPopup spot={spot} />
       </Popup>
@@ -161,7 +156,7 @@ const SpotMarker = ({ spot }) => {
   )
 }
 
-const FullScreenMap = ({ spots = [], isOpen, onClose }) => {
+const FullScreenMap = ({ spots = [], isOpen, onClose, onSpotClick }) => {
   const [userLocation, setUserLocation] = useState(null)
 
   useEffect(() => {
@@ -250,20 +245,19 @@ const FullScreenMap = ({ spots = [], isOpen, onClose }) => {
 
       <style>{`
         .custom-popup .leaflet-popup-content-wrapper {
-          background: rgba(255, 255, 255, 0.95);
-          backdrop-filter: blur(8px);
-          border-radius: 12px;
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+          background: none;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
           padding: 0;
         }
 
         .custom-popup .leaflet-popup-content {
           margin: 0;
-          min-width: 300px;
+          min-width: 120px;
+          max-width: 150px;
         }
 
         .custom-popup .leaflet-popup-tip {
-          background: rgba(255, 255, 255, 0.95);
+          background: white;
         }
 
         .map-tiles {
@@ -287,12 +281,9 @@ const FullScreenMap = ({ spots = [], isOpen, onClose }) => {
           filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.5));
         }
 
-        .leaflet-popup {
+        .custom-popup:hover {
+          transform: translateY(-1px);
           transition: transform 0.2s;
-        }
-
-        .leaflet-popup:hover {
-          transform: scale(1.02);
         }
 
         .leaflet-popup-content {
