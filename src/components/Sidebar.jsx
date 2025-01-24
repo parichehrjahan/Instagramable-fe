@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
+import { useNavigate } from 'react-router'
 
 // Define libraries and mapContainerStyle outside component
 const libraries = ['places']
@@ -41,6 +42,7 @@ const Sidebar = ({
   })
 
   const autocompleteRef = useRef(null)
+  const navigate = useNavigate()
 
   const onLoad = useCallback((autocomplete) => {
     autocompleteRef.current = autocomplete
@@ -113,6 +115,13 @@ const Sidebar = ({
     popupAnchor: [0, -40],
   })
 
+  const handleLogoClick = () => {
+    navigate('/', { replace: true })
+    if (isFullScreenMapOpen) {
+      onViewChange(false)
+    }
+  }
+
   return (
     <aside
       className={`w-64 border-r h-screen fixed left-0 top-0 z-50 overflow-y-auto ${
@@ -124,7 +133,10 @@ const Sidebar = ({
       <div className="p-4 space-y-4">
         <div className="space-y-2">
           <h1
-            className={`text-4xl ${isFullScreenMapOpen ? 'text-white' : ''}`}
+            onClick={handleLogoClick}
+            className={`text-4xl cursor-pointer hover:opacity-80 transition-opacity ${
+              isFullScreenMapOpen ? 'text-white' : ''
+            }`}
             style={{ fontFamily: "'Satisfy', cursive" }}
           >
             Instagramable
