@@ -9,6 +9,8 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
 import { useNavigate } from 'react-router'
+import { useLocation } from '@/contexts/LocationContext'
+import { calculateDistance } from '@/lib/utils'
 
 // Define libraries and mapContainerStyle outside component
 const libraries = ['places']
@@ -30,11 +32,14 @@ const Sidebar = ({
   isFullScreenMapOpen,
   onViewChange,
 }) => {
+  const { location, searchRadius, updateLocation, updateSearchRadius } =
+    useLocation()
   const [selectedCategories, setSelectedCategories] = useState([])
-  const [distance, setDistance] = useState(50)
-  const [location, setLocation] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [mapCenter, setMapCenter] = useState([-6.2088, 106.8456]) // Default coordinates
   const [userLocation, setUserLocation] = useState(null)
+  const [searchInput, setSearchInput] = useState('')
+  const [autocomplete, setAutocomplete] = useState(null)
 
   const { isLoaded, loadError: apiLoadError } = useJsApiLoader({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
@@ -44,24 +49,20 @@ const Sidebar = ({
   const autocompleteRef = useRef(null)
   const navigate = useNavigate()
 
-  const onLoad = useCallback((autocomplete) => {
-    autocompleteRef.current = autocomplete
-  }, [])
-
-  useEffect(() => {
-    if (location) {
-      setMapCenter({
-        lat: location.lat,
-        lng: location.lng,
-      })
-    }
-  }, [location])
+  const onLoad = (autocomplete) => {
+    setAutocomplete(autocomplete)
+  }
 
   useEffect(() => {
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setUserLocation([position.coords.latitude, position.coords.longitude])
+          const newLocation = [
+            position.coords.latitude,
+            position.coords.longitude,
+          ]
+          setUserLocation(newLocation)
+          setMapCenter(newLocation)
         },
         (error) => {
           console.log('Error getting location:', error)
@@ -70,26 +71,55 @@ const Sidebar = ({
     }
   }, [])
 
-  const onPlaceChanged = useCallback(() => {
-    const place = autocompleteRef.current?.getPlace()
-    if (place?.geometry) {
-      const newLocation = {
-        lat: place.geometry.location.lat(),
-        lng: place.geometry.location.lng(),
-        address: place.formatted_address,
-      }
-      setLocation(newLocation)
-      setSearchQuery(place.formatted_address)
+  // Update map center when location changes
+  useEffect(() => {
+    if (location?.lat && location?.lng) {
+      setMapCenter([location.lat, location.lng])
+    }
+  }, [location])
 
-      // Trigger filter change with new location
+  // Add useEffect to filter spots when location, radius, or spots change
+  useEffect(() => {
+    if (location?.lat && location?.lng && spots) {
+      const nearbySpots = spots.filter((spot) => {
+        if (!spot.latitude || !spot.longitude) return false
+
+        const distance = calculateDistance(
+          location.lat,
+          location.lng,
+          parseFloat(spot.latitude),
+          parseFloat(spot.longitude)
+        )
+        return distance <= searchRadius
+      })
+
       onFilterChange({
+        spots: nearbySpots,
         categories: selectedCategories,
-        distance,
-        location: newLocation,
-        searchQuery: place.formatted_address,
+        distance: searchRadius,
+        location,
       })
     }
-  }, [selectedCategories, distance, onFilterChange])
+  }, [location, searchRadius, spots, selectedCategories, onFilterChange])
+
+  const onPlaceChanged = () => {
+    if (autocomplete !== null) {
+      const place = autocomplete.getPlace()
+      if (place.geometry) {
+        const newLocation = {
+          lat: place.geometry.location.lat(),
+          lng: place.geometry.location.lng(),
+          address: place.formatted_address,
+        }
+        updateLocation(newLocation)
+        setSearchQuery(place.formatted_address)
+      }
+    }
+  }
+
+  const handleDistanceChange = ([value]) => {
+    updateSearchRadius(value)
+  }
 
   const toggleCategory = (categoryId) => {
     const newCategories = selectedCategories.includes(categoryId)
@@ -100,7 +130,7 @@ const Sidebar = ({
 
     onFilterChange({
       categories: newCategories,
-      distance,
+      distance: searchRadius,
       location,
       searchQuery,
     })
@@ -177,7 +207,7 @@ const Sidebar = ({
                 isFullScreenMapOpen ? 'text-gray-300' : 'text-muted-foreground'
               }`}
             >
-              Selected: {location.address}
+              {location.address}
             </div>
           )}
         </div>
@@ -192,7 +222,7 @@ const Sidebar = ({
             <Skeleton className="h-2 w-full my-6" />
           ) : (
             <Slider
-              defaultValue={[distance]}
+              defaultValue={[searchRadius]}
               max={100}
               step={1}
               className={`py-4 ${
@@ -200,13 +230,13 @@ const Sidebar = ({
                   ? '[&_.relative_>_span]:bg-white [&_.relative]:bg-gray-600'
                   : ''
               }`}
-              onValueChange={([value]) => setDistance(value)}
+              onValueChange={handleDistanceChange}
             />
           )}
           <div
             className={`text-sm ${isFullScreenMapOpen ? 'text-white' : 'text-muted-foreground'}`}
           >
-            Within {distance} km
+            Within {searchRadius} km
           </div>
         </div>
 
@@ -277,7 +307,7 @@ const Sidebar = ({
           {!isFullScreenMapOpen && (
             <div className="h-[300px] rounded-lg overflow-hidden">
               <MapContainer
-                center={userLocation || [-6.2088, 106.8456]}
+                center={mapCenter}
                 zoom={13}
                 style={{ height: '100%', width: '100%' }}
                 zoomControl={false}
@@ -310,11 +340,13 @@ const Sidebar = ({
                       </Marker>
                     )
                 )}
-                {location && (
+                {location?.lat && location?.lng && (
                   <Marker
                     position={[location.lat, location.lng]}
                     icon={customIcon}
-                  />
+                  >
+                    <Popup>Selected Location</Popup>
+                  </Marker>
                 )}
               </MapContainer>
             </div>

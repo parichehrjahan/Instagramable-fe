@@ -38,6 +38,10 @@ const HomePage = () => {
   const [spots, setSpots] = useState([])
   const [filteredSpots, setFilteredSpots] = useState([])
   const { isFullScreenMapOpen, setIsFullScreenMapOpen } = useHeader()
+  const [mapCenter, setMapCenter] = useState({
+    lat: 43.6532, // Default to Toronto
+    lng: -79.3832,
+  })
 
   const {
     data: spotsData,
@@ -73,61 +77,9 @@ const HomePage = () => {
     )
   }, [])
 
-  const handleFilterChange = ({
-    categories,
-    distance,
-    location,
-    searchQuery,
-  }) => {
-    if (!Array.isArray(spots)) {
-      console.error('Spots data is not an array:', spots)
-      return
-    }
-
-    let filtered = [...spots]
-
-    // Filter by location and distance if both are provided
-    if (location && distance) {
-      filtered = filtered.filter((spot) => {
-        if (!spot.latitude || !spot.longitude) return false
-
-        // Calculate distance using Haversine formula
-        const R = 6371 // Earth's radius in kilometers
-        const lat1 = (location.lat * Math.PI) / 180
-        const lon1 = (location.lng * Math.PI) / 180
-        const lat2 = (spot.latitude * Math.PI) / 180
-        const lon2 = (spot.longitude * Math.PI) / 180
-
-        const dLat = lat2 - lat1
-        const dLon = lon2 - lon1
-
-        const a =
-          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-          Math.cos(lat1) *
-            Math.cos(lat2) *
-            Math.sin(dLon / 2) *
-            Math.sin(dLon / 2)
-
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-        const d = R * c // Distance in kilometers
-
-        return d <= distance
-      })
-    }
-
-    // Keep existing search query filter
-    if (searchQuery?.trim()) {
-      const query = searchQuery.toLowerCase()
-      filtered = filtered.filter(
-        (spot) =>
-          (spot?.name || '').toLowerCase().includes(query) ||
-          (spot?.description || '').toLowerCase().includes(query) ||
-          (spot?.location || '').toLowerCase().includes(query)
-      )
-    }
-
-    setFilteredSpots(filtered)
-  }
+  const handleFilterChange = useCallback(({ spots: filteredSpots }) => {
+    setFilteredSpots(filteredSpots)
+  }, [])
 
   const handleViewChange = (isMapView) => {
     setIsFullScreenMapOpen(isMapView)
@@ -143,6 +95,8 @@ const HomePage = () => {
           error={error}
           isFullScreenMapOpen={isFullScreenMapOpen}
           onViewChange={handleViewChange}
+          mapCenter={mapCenter}
+          setMapCenter={setMapCenter}
         />
         <div className="flex-1 ml-64">
           <SpotGridSkeleton />
@@ -169,6 +123,8 @@ const HomePage = () => {
         spots={spotsData}
         isFullScreenMapOpen={isFullScreenMapOpen}
         onViewChange={handleViewChange}
+        mapCenter={mapCenter}
+        setMapCenter={setMapCenter}
       />
       <div className="flex-1 ml-64">
         {isFullScreenMapOpen ? (
