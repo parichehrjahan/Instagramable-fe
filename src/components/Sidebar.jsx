@@ -113,6 +113,29 @@ const Sidebar = ({
         }
         updateLocation(newLocation)
         setSearchQuery(place.formatted_address)
+
+        // Filter spots based on new location
+        if (spots) {
+          const nearbySpots = spots.filter((spot) => {
+            if (!spot.latitude || !spot.longitude) return false
+            const distance = calculateDistance(
+              newLocation.lat,
+              newLocation.lng,
+              parseFloat(spot.latitude),
+              parseFloat(spot.longitude)
+            )
+            return distance <= searchRadius
+          })
+          onFilterChange({
+            spots: nearbySpots,
+            categories: selectedCategories,
+            distance: searchRadius,
+            location: newLocation,
+          })
+        }
+
+        // Add to browser history so back button works
+        window.history.pushState({ filtered: true }, '')
       }
     }
   }
@@ -146,7 +169,22 @@ const Sidebar = ({
   })
 
   const handleLogoClick = () => {
-    navigate('/', { replace: true })
+    // Reset location and filters
+    updateLocation({
+      lat: null,
+      lng: null,
+      address: '',
+    })
+    setSearchQuery('')
+    setSelectedCategories([])
+
+    // Reset filtered spots
+    onFilterChange({ spots: spots || [] })
+
+    // Navigate to home
+    navigate('/')
+
+    // If map is open, close it
     if (isFullScreenMapOpen) {
       onViewChange(false)
     }

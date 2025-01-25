@@ -1,5 +1,5 @@
 import Sidebar from '@/components/Sidebar'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import {
   getSpots,
   getCurrentUserStoredSpots,
@@ -84,6 +84,22 @@ const HomePage = () => {
   const handleViewChange = (isMapView) => {
     setIsFullScreenMapOpen(isMapView)
   }
+
+  // Add effect to reset filters when navigating back
+  useEffect(() => {
+    const handlePopState = () => {
+      // Reset filters when user clicks back
+      setFilteredSpots([])
+      updateLocation({
+        lat: null,
+        lng: null,
+        address: '',
+      })
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
 
   if (loading) {
     return (
