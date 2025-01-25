@@ -1,18 +1,33 @@
 import { useParams } from 'react-router'
 import { Card } from '@/components/ui/card'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X, Plus } from 'lucide-react'
 import { getSpotById } from '@/services/api'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import ReviewForm from '@/components/ReviewForm'
 import ReviewInteractions from '@/components/ReviewInteraction'
 import SpotReview from '@/components/SpotReview'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
+import supabase from '@/lib/supabaseClient'
 
 const SpotPage = () => {
   const { id } = useParams()
   const [currentImage, setCurrentImage] = useState(0)
   const queryClient = useQueryClient()
+  const [currentUserId, setCurrentUserId] = useState(null)
+
+  // Add this useEffect to get the current user
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      if (session) {
+        setCurrentUserId(session.user.id)
+      }
+    }
+    getCurrentUser()
+  }, [])
 
   // Fetch spot data
   const {
@@ -32,21 +47,102 @@ const SpotPage = () => {
   const reviews = spot?.reviews
   const userReviewInteractions = spot?.user_review_interaction
 
+  // Filter images based on is_gallery flag
+  const carouselImages =
+    spotImages?.filter((image) => image.is_gallery === false) || [] // Only false for carousel
+  const galleryImages =
+    spotImages?.filter((image) => image.is_gallery === true) || [] // Only true for gallery
+
   const nextImage = (e) => {
     e.stopPropagation()
-    setCurrentImage((prev) => (prev + 1) % spotImages.length)
+    setCurrentImage((prev) => (prev + 1) % carouselImages.length)
   }
 
   const prevImage = (e) => {
     e.stopPropagation()
     setCurrentImage(
-      (prev) => (prev - 1 + spotImages.length) % spotImages.length
+      (prev) => (prev - 1 + carouselImages.length) % carouselImages.length
     )
   }
 
   const handleReviewSubmitted = (newReview) => {
     // React Query will automatically refetch the reviews
     queryClient.invalidateQueries(['reviews', id])
+  }
+
+  const handleDeleteImage = async (imageId) => {
+    // TODO: Implement image deletion logic
+    // Call your API endpoint to delete the image
+    // Then invalidate the spot query to refresh the data
+    try {
+      // await deleteSpotImage(imageId);
+      queryClient.invalidateQueries(['spot', id])
+    } catch (error) {
+      console.error('Failed to delete image:', error)
+    }
+  }
+
+  const handleImageUpload = async (event) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    try {
+      const {
+        data: { session },
+        error: authError,
+      } = await supabase.auth.getSession()
+
+      if (authError || !session) {
+        throw new Error('Please login to upload images')
+      }
+
+      // Create unique filename
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+      const filePath = `spots/${fileName}`
+
+      // Upload to Supabase storage using 'images' bucket
+      const { error: uploadError } = await supabase.storage
+        .from('images')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: file.type,
+        })
+
+      if (uploadError) {
+        console.error('Upload error details:', uploadError)
+        throw uploadError
+      }
+
+      // Get the public URL
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('images').getPublicUrl(filePath)
+
+      // Save to spot_images table with is_gallery flag
+      const { error: dbError } = await supabase.from('spot_images').insert({
+        spot_id: id,
+        image_url: publicUrl,
+        is_gallery: true, // Mark as gallery image
+        caption: null, // Optional caption can be added later
+        user_id: session.user.id,
+      })
+
+      if (dbError) {
+        console.error('Database error:', dbError)
+        throw dbError
+      }
+
+      // Immediately refresh the spot data
+      queryClient.invalidateQueries(['spot', id])
+
+      // Force refetch the spot data
+      await queryClient.refetchQueries(['spot', id])
+    } catch (error) {
+      console.error('Failed to upload image:', error)
+      alert(error.message || 'Failed to upload image. Please try again.')
+    }
   }
 
   const sortedReviews =
@@ -85,14 +181,14 @@ const SpotPage = () => {
   return (
     <div className="max-w-4xl mx-auto p-4">
       <div className="relative h-[400px] bg-muted rounded-lg mb-6">
-        {spotImages && spotImages.length > 0 ? (
+        {carouselImages.length > 0 ? (
           <>
             <img
-              src={spotImages[currentImage].image_url}
+              src={carouselImages[currentImage].image_url}
               alt={spot.name}
               className="w-full h-full object-cover rounded-lg"
             />
-            {spotImages.length > 1 && (
+            {carouselImages.length > 1 && (
               <>
                 <button
                   onClick={prevImage}
@@ -107,7 +203,7 @@ const SpotPage = () => {
                   <ChevronRight className="h-6 w-6" />
                 </button>
                 <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-                  {spotImages.map((_, idx) => (
+                  {carouselImages.map((_, idx) => (
                     <div
                       key={idx}
                       className={`w-2 h-2 rounded-full ${
@@ -140,6 +236,45 @@ const SpotPage = () => {
         <Card className="p-4">
           <h2 className="font-semibold mb-2">Description</h2>
           <p className="text-gray-600">{spot.description}</p>
+        </Card>
+
+        {/* Gallery Section */}
+        <Card className="p-4">
+          <h2 className="font-semibold mb-2">Gallery</h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            Share your photos of this spot
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {galleryImages.map((image, idx) => (
+              <div key={idx} className="relative group">
+                <img
+                  src={image.image_url}
+                  alt={`Spot image ${idx + 1}`}
+                  className="w-full h-48 object-cover rounded-lg"
+                />
+                {image.user_id === currentUserId && (
+                  <button
+                    onClick={() => handleDeleteImage(image.id)}
+                    className="absolute top-2 right-2 p-2 bg-red-500 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            ))}
+            <label className="border-2 border-dashed border-gray-300 rounded-lg h-48 flex items-center justify-center cursor-pointer hover:border-gray-400 transition-colors">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+              />
+              <div className="text-center">
+                <Plus className="h-8 w-8 mx-auto text-gray-400" />
+                <span className="text-sm text-gray-500">Add Photo</span>
+              </div>
+            </label>
+          </div>
         </Card>
 
         {/* Reviews Section */}
