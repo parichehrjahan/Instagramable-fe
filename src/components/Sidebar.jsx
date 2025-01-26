@@ -78,23 +78,37 @@ const Sidebar = ({
     }
   }, [location])
 
-  // Add useEffect to filter spots when location, radius, or spots change
+  // Update useEffect to include category filtering
   useEffect(() => {
-    if (location?.lat && location?.lng && spots) {
-      const nearbySpots = spots.filter((spot) => {
-        if (!spot.latitude || !spot.longitude) return false
+    if (spots) {
+      let filteredResults = [...spots]
 
-        const distance = calculateDistance(
-          location.lat,
-          location.lng,
-          parseFloat(spot.latitude),
-          parseFloat(spot.longitude)
+      // Filter by location if set
+      if (location?.lat && location?.lng) {
+        filteredResults = filteredResults.filter((spot) => {
+          if (!spot.latitude || !spot.longitude) return false
+
+          const distance = calculateDistance(
+            location.lat,
+            location.lng,
+            parseFloat(spot.latitude),
+            parseFloat(spot.longitude)
+          )
+          return distance <= searchRadius
+        })
+      }
+
+      // Filter by categories if any are selected
+      if (selectedCategories.length > 0) {
+        filteredResults = filteredResults.filter((spot) =>
+          selectedCategories.some((categoryId) =>
+            spot.categories?.includes(categoryId)
+          )
         )
-        return distance <= searchRadius
-      })
+      }
 
       onFilterChange({
-        spots: nearbySpots,
+        spots: filteredResults,
         categories: selectedCategories,
         distance: searchRadius,
         location,

@@ -78,7 +78,7 @@ const HomePage = () => {
   }, [])
 
   const handleFilterChange = useCallback(({ spots: filteredSpots }) => {
-    setFilteredSpots(filteredSpots)
+    setFilteredSpots(filteredSpots || []) // Ensure we always set an array
   }, [])
 
   const handleViewChange = (isMapView) => {
@@ -129,6 +129,9 @@ const HomePage = () => {
     )
   }
 
+  const displaySpots =
+    filteredSpots.length > 0 ? filteredSpots : spotsData || []
+
   return (
     <>
       <Sidebar
@@ -145,13 +148,13 @@ const HomePage = () => {
       <div className="flex-1 ml-64">
         {isFullScreenMapOpen ? (
           <FullScreenMap
-            spots={spotsData || []}
+            spots={displaySpots}
             isOpen={isFullScreenMapOpen}
             onClose={() => setIsFullScreenMapOpen(false)}
           />
         ) : (
           <SpotGrid
-            spots={filteredSpots.length > 0 ? filteredSpots : spotsData}
+            spots={displaySpots}
             savedSpotIds={savedSpotsData}
             onSaveToggle={handleSaveToggle}
           />
