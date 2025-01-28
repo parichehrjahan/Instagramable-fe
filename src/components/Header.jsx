@@ -1,11 +1,20 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Bookmark, Plus } from 'lucide-react'
+import { Bookmark, Plus, LogOut, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useNavigate, useLocation } from 'react-router'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { useUser } from '@/contexts/UserContext'
 
 const Header = () => {
   const navigate = useNavigate()
   const location = useLocation()
+  const { user } = useUser()
   const isOnSavedSpots = location.pathname === '/saved-spots'
 
   const handleAddSpot = () => {
@@ -18,6 +27,14 @@ const Header = () => {
     } else {
       navigate('/saved-spots')
     }
+  }
+
+  const handleLogout = () => {
+    navigate('/login')
+  }
+
+  const handleProfile = () => {
+    navigate('/profile')
   }
 
   return (
@@ -54,14 +71,35 @@ const Header = () => {
               }`}
             />
           </Button>
-          <Avatar className="h-8 w-8 cursor-pointer hover:opacity-80 transition-opacity">
-            <AvatarImage
-              src="https://github.com/shadcn.png"
-              alt="Profile"
-              className="object-cover"
-            />
-            <AvatarFallback>U</AvatarFallback>
-          </Avatar>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Avatar className="h-8 w-8 cursor-pointer hover:opacity-80 transition-opacity">
+                <AvatarImage
+                  src={user?.profileImage || 'https://github.com/shadcn.png'}
+                  alt="Profile"
+                  className="object-cover"
+                />
+                <AvatarFallback>{user?.name?.[0] || 'U'}</AvatarFallback>
+              </Avatar>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem
+                onClick={handleProfile}
+                className="cursor-pointer"
+              >
+                <User className="mr-2 h-4 w-4" />
+                Profile
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={handleLogout}
+                className="cursor-pointer text-red-600"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Logout
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>
