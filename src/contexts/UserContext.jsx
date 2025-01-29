@@ -6,9 +6,12 @@ const UserContext = createContext({})
 // eslint-disable-next-line react/prop-types
 export function UserProvider({ children }) {
   const [user, setUser] = useState({
-    name: 'Test User',
-    email: 'test@example.com',
+    username: 'username',
+    fullName: 'Full Name',
+    bio: 'Bio goes here',
     profileImage: 'https://github.com/shadcn.png',
+    followers: [],
+    following: [],
   })
   const [session, setSession] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -55,8 +58,17 @@ export function UserProvider({ children }) {
     }
   }
 
+  const updateUser = (newData) => {
+    setUser((prev) => ({
+      ...prev,
+      ...newData,
+    }))
+  }
+
   return (
-    <UserContext.Provider value={{ user, session, loading, setUser }}>
+    <UserContext.Provider
+      value={{ user, session, loading, setUser, updateUser }}
+    >
       {children}
     </UserContext.Provider>
   )

@@ -1,7 +1,16 @@
 import { useUser } from '@/contexts/UserContext'
+import { useState } from 'react'
+import { EditProfileDialog } from '@/components/EditProfileDialog'
 
 function ProfilePage() {
-  const { user } = useUser()
+  const { user, updateUser } = useUser()
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [posts, setPosts] = useState([]) // You'll need to fetch actual posts
+
+  const handleEditProfile = (updatedData) => {
+    // Here you would typically make an API call to update the user data
+    updateUser(updatedData)
+  }
 
   return (
     <div className="max-w-[935px] mx-auto px-4">
@@ -24,7 +33,10 @@ function ProfilePage() {
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center mb-6">
             <h2 className="text-xl">{user?.username || 'username'}</h2>
             <div className="flex gap-2">
-              <button className="bg-[#efefef] hover:bg-[#dbdbdb] px-4 py-1.5 rounded-lg font-semibold text-sm">
+              <button
+                onClick={() => setIsEditDialogOpen(true)}
+                className="bg-[#efefef] hover:bg-[#dbdbdb] px-4 py-1.5 rounded-lg font-semibold text-sm"
+              >
                 Edit profile
               </button>
             </div>
@@ -33,22 +45,26 @@ function ProfilePage() {
           {/* Stats */}
           <div className="flex gap-10 mb-5">
             <div>
-              <span className="font-semibold">0</span> posts
+              <span className="font-semibold">{posts.length}</span> posts
             </div>
             <div>
-              <span className="font-semibold">0</span> followers
+              <span className="font-semibold">
+                {user?.followers?.length || 0}
+              </span>{' '}
+              followers
             </div>
             <div>
-              <span className="font-semibold">0</span> following
+              <span className="font-semibold">
+                {user?.following?.length || 0}
+              </span>{' '}
+              following
             </div>
           </div>
 
           {/* Bio */}
           <div className="text-sm">
-            <div className="font-semibold">{user?.fullName || 'Full Name'}</div>
-            <p className="whitespace-pre-line">
-              {user?.bio || 'Bio goes here'}
-            </p>
+            <div className="font-semibold">{user?.fullName}</div>
+            <p className="whitespace-pre-line">{user?.bio}</p>
           </div>
         </div>
       </header>
@@ -92,6 +108,14 @@ function ProfilePage() {
           </div>
         ))}
       </div>
+
+      {/* Add the EditProfileDialog */}
+      <EditProfileDialog
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        user={user}
+        onSave={handleEditProfile}
+      />
     </div>
   )
 }
