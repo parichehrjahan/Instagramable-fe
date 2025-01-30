@@ -1,30 +1,97 @@
 import { useUser } from '@/contexts/UserContext'
 import { useState } from 'react'
 import { EditProfileDialog } from '@/components/EditProfileDialog'
+import supabase from '@/lib/supabaseClient'
 
 function ProfilePage() {
   const { user, updateUser } = useUser()
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [posts, setPosts] = useState([]) // You'll need to fetch actual posts
+  const [uploading, setUploading] = useState(false)
 
   const handleEditProfile = (updatedData) => {
     // Here you would typically make an API call to update the user data
     updateUser(updatedData)
   }
 
+  const handleProfileImageUpload = async (file) => {
+    try {
+      setUploading(true)
+      if (!file) return
+
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${Math.random()}.${fileExt}`
+      const filePath = `${fileName}`
+
+      const { error: uploadError, data } = await supabase.storage
+        .from('images')
+        .upload(filePath, file)
+
+      if (uploadError) {
+        throw uploadError
+      }
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('images').getPublicUrl(filePath)
+
+      // Update user profile with new image
+      updateUser({ ...user, profileImage: publicUrl })
+    } catch (error) {
+      console.error('Error uploading image:', error)
+      alert('Error uploading image!')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handleDrop = (e) => {
+    e.preventDefault()
+    const file = e.dataTransfer.files[0]
+    if (file && file.type.startsWith('image/')) {
+      handleProfileImageUpload(file)
+    }
+  }
+
+  const handleDragOver = (e) => {
+    e.preventDefault()
+  }
+
+  const handleFileInputChange = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      handleProfileImageUpload(file)
+    }
+  }
+
   return (
     <div className="max-w-[935px] mx-auto px-4">
       {/* Profile Header */}
       <header className="flex gap-8 sm:gap-28 py-11">
-        {/* Profile Picture */}
+        {/* Profile Picture with drag & drop and file input */}
         <div className="flex-none">
-          <div className="w-[77px] h-[77px] sm:w-[150px] sm:h-[150px] rounded-full border-[1px] p-[2px] cursor-pointer">
+          <label
+            className={`w-[77px] h-[77px] sm:w-[150px] sm:h-[150px] rounded-full border-[1px] p-[2px] cursor-pointer relative block
+              ${uploading ? 'opacity-50' : ''}`}
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+          >
+            <input
+              type="file"
+              className="hidden"
+              accept="image/*"
+              onChange={handleFileInputChange}
+              disabled={uploading}
+            />
             <img
               src={user?.profileImage || 'https://github.com/shadcn.png'}
               alt="profile"
               className="rounded-full w-full h-full object-cover"
             />
-          </div>
+            <div className="absolute inset-0 rounded-full hover:bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+              <span className="text-white text-sm">Change Photo</span>
+            </div>
+          </label>
         </div>
 
         {/* Profile Info */}
