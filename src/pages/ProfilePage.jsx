@@ -2,6 +2,7 @@ import { useUser } from '@/contexts/UserContext'
 import { useState } from 'react'
 import { EditProfileDialog } from '@/components/EditProfileDialog'
 import supabase from '@/lib/supabaseClient'
+import { updateProfileImage } from '@/lib/utils'
 
 function ProfilePage() {
   const { user, updateUser } = useUser()
@@ -19,23 +20,7 @@ function ProfilePage() {
       setUploading(true)
       if (!file) return
 
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${Math.random()}.${fileExt}`
-      const filePath = `${fileName}`
-
-      const { error: uploadError, data } = await supabase.storage
-        .from('images')
-        .upload(filePath, file)
-
-      if (uploadError) {
-        throw uploadError
-      }
-
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from('images').getPublicUrl(filePath)
-
-      // Update user profile with new image
+      const publicUrl = await updateProfileImage(file, user.id)
       updateUser({ ...user, profileImage: publicUrl })
     } catch (error) {
       console.error('Error uploading image:', error)

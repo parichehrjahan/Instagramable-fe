@@ -8,6 +8,7 @@ import { createSpot } from '@/services/api'
 import { ImagePlus, X, Loader2, Search } from 'lucide-react'
 import supabase from '@/lib/supabaseClient'
 import { useJsApiLoader, Autocomplete } from '@react-google-maps/api'
+import { uploadSpotImages } from '@/lib/utils'
 
 const libraries = ['places']
 
@@ -107,52 +108,6 @@ const AddSpotPage = () => {
     setError(null)
   }
 
-  const uploadImage = async (file) => {
-    try {
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
-      const filePath = `spots/${fileName}`
-
-      // Get the current session
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-
-      if (!session) {
-        throw new Error('No authenticated session')
-      }
-
-      const { error: uploadError } = await supabase.storage
-        .from('images')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false,
-          contentType: file.type,
-        })
-
-      if (uploadError) {
-        console.error('Upload error details:', uploadError)
-        throw uploadError
-      }
-
-      // Get the correct public URL using Supabase's CDN
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from('images').getPublicUrl(filePath)
-
-      // Verify the URL is accessible
-      const urlCheck = await fetch(publicUrl, { method: 'HEAD' })
-      if (!urlCheck.ok) {
-        throw new Error('Generated URL is not accessible')
-      }
-
-      return publicUrl
-    } catch (error) {
-      console.error('Error uploading image:', error)
-      throw error
-    }
-  }
-
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
@@ -160,8 +115,7 @@ const AddSpotPage = () => {
 
     try {
       // Upload images first
-      const uploadPromises = images.map(uploadImage)
-      const imageUrls = await Promise.all(uploadPromises)
+      const imageUrls = await uploadSpotImages(images)
 
       const spot = await createSpot({
         name: formData.name,

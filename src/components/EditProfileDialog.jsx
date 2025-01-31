@@ -14,7 +14,6 @@ export function EditProfileDialog({ open, onOpenChange, user, onSave }) {
     fullName: user?.fullName || '',
     username: user?.username || '',
     bio: user?.bio || '',
-    profileImage: user?.profileImage || '',
   })
 
   const handleChange = (e) => {
@@ -38,15 +37,6 @@ export function EditProfileDialog({ open, onOpenChange, user, onSave }) {
           <DialogTitle>Edit Profile</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="text-sm font-medium">Profile Image URL</label>
-            <Input
-              name="profileImage"
-              value={formData.profileImage}
-              onChange={handleChange}
-              placeholder="Profile image URL"
-            />
-          </div>
           <div>
             <label className="text-sm font-medium">Username</label>
             <Input
