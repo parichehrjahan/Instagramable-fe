@@ -61,20 +61,43 @@ export const uploadImageToSupabase = async (
 // Function to upload profile image and update profile
 export const updateProfileImage = async (file, userId) => {
   try {
-    const publicUrl = await uploadImageToSupabase(
-      file,
-      'user_images',
-      'profiles'
-    )
+    // Generate file name
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${userId}-${Date.now()}.${fileExt}`
+    const filePath = `profiles/${fileName}`
 
-    // Check if profile exists
+    // Upload to user_images bucket
+    const { error: uploadError } = await supabase.storage
+      .from('user_images')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: true, // Changed to true to allow updating existing image
+      })
+
+    if (uploadError) {
+      console.error('Upload error:', uploadError)
+      throw uploadError
+    }
+
+    // Get public URL
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from('user_images').getPublicUrl(filePath)
+
+    // Update profile in database
     const { data: existingProfile, error: fetchError } = await supabase
       .from('profiles')
       .select('*')
       .eq('user_id', userId)
       .single()
 
-    if (fetchError) {
+    if (fetchError && fetchError.code !== 'PGRST116') {
+      // PGRST116 is "not found" error
+      console.error('Fetch error:', fetchError)
+      throw fetchError
+    }
+
+    if (!existingProfile) {
       // Create new profile
       const { error: insertError } = await supabase.from('profiles').insert([
         {
@@ -82,19 +105,25 @@ export const updateProfileImage = async (file, userId) => {
           profile_image_url: publicUrl,
         },
       ])
-      if (insertError) throw insertError
+      if (insertError) {
+        console.error('Insert error:', insertError)
+        throw insertError
+      }
     } else {
       // Update existing profile
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ profile_image_url: publicUrl })
         .eq('user_id', userId)
-      if (updateError) throw updateError
+      if (updateError) {
+        console.error('Update error:', updateError)
+        throw updateError
+      }
     }
 
     return publicUrl
   } catch (error) {
-    console.error('Error updating profile image:', error)
+    console.error('Error in updateProfileImage:', error)
     throw error
   }
 }
