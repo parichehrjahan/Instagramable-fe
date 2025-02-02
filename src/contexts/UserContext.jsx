@@ -9,7 +9,7 @@ export function UserProvider({ children }) {
     username: 'username',
     fullName: 'Full Name',
     bio: 'Bio goes here',
-    profileImage: 'https://github.com/shadcn.png',
+    prfoile_picture: 'https://github.com/shadcn.png',
     followers: [],
     following: [],
   })

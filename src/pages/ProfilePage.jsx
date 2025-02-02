@@ -69,7 +69,7 @@ function ProfilePage() {
               disabled={uploading}
             />
             <img
-              src={user?.profileImage || 'https://github.com/shadcn.png'}
+              src={user?.profile_picture || 'https://github.com/shadcn.png'}
               alt="profile"
               className="rounded-full w-full h-full object-cover"
             />

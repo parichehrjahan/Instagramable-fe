@@ -59,11 +59,16 @@ export const uploadImageToSupabase = async (
 }
 
 // Function to upload profile image and update profile
-export const updateProfileImage = async (file, userId) => {
+export const updateProfileImage = async (file) => {
   try {
     // Generate file name
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) throw new Error('No authenticated user')
+
     const fileExt = file.name.split('.').pop()
-    const fileName = `${userId}-${Date.now()}.${fileExt}`
+    const fileName = `${user.id}-${Date.now()}.${fileExt}`
     const filePath = `profiles/${fileName}`
 
     // Upload to user_images bucket
@@ -71,7 +76,8 @@ export const updateProfileImage = async (file, userId) => {
       .from('user_images')
       .upload(filePath, file, {
         cacheControl: '3600',
-        upsert: true, // Changed to true to allow updating existing image
+        upsert: true,
+        contentType: file.type,
       })
 
     if (uploadError) {
@@ -84,41 +90,17 @@ export const updateProfileImage = async (file, userId) => {
       data: { publicUrl },
     } = supabase.storage.from('user_images').getPublicUrl(filePath)
 
-    // Update profile in database
-    const { data: existingProfile, error: fetchError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('user_id', userId)
-      .single()
+    // Update user profile with new image URL - removed updated_at
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({
+        profile_picture: publicUrl,
+      })
+      .eq('id', user.id)
 
-    if (fetchError && fetchError.code !== 'PGRST116') {
-      // PGRST116 is "not found" error
-      console.error('Fetch error:', fetchError)
-      throw fetchError
-    }
-
-    if (!existingProfile) {
-      // Create new profile
-      const { error: insertError } = await supabase.from('profiles').insert([
-        {
-          user_id: userId,
-          profile_image_url: publicUrl,
-        },
-      ])
-      if (insertError) {
-        console.error('Insert error:', insertError)
-        throw insertError
-      }
-    } else {
-      // Update existing profile
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ profile_image_url: publicUrl })
-        .eq('user_id', userId)
-      if (updateError) {
-        console.error('Update error:', updateError)
-        throw updateError
-      }
+    if (updateError) {
+      console.error('Update error:', updateError)
+      throw updateError
     }
 
     return publicUrl
