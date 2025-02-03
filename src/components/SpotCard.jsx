@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Bookmark, Star, Trash2 } from 'lucide-react'
+import { Bookmark, Trash2 } from 'lucide-react'
 import { toggleSavedSpot, deleteSpot } from '@/services/api'
 import ImageCarousel from './ImageCarousel'
 import DeleteSpotDialog from './DeleteSpotDialog'
@@ -15,7 +15,7 @@ const SpotCard = ({ spot, savedSpotIds, onSaveToggle }) => {
   const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
-    setIsSaved(savedSpotIds.includes(spot.id))
+    setIsSaved(savedSpotIds?.includes(spot.id))
   }, [savedSpotIds, spot.id])
 
   const handleSaveToggle = async (e) => {

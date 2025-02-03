@@ -1,45 +1,24 @@
 import Sidebar from '@/components/Sidebar'
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import {
   getSpots,
   getCurrentUserStoredSpots,
   getCategories,
 } from '@/services/api'
 import SpotGrid from '@/components/SpotGrid'
-import { calculateDistance } from '@/lib/utils'
-import { Skeleton } from '@/components/ui/skeleton'
 import { useQuery } from '@tanstack/react-query'
-import FullScreenMap from '@/components/ui/FullScreenMap'
 import { useHeader } from '@/contexts/HeaderContext'
-
-const SpotCardSkeleton = () => (
-  <div className="overflow-hidden rounded-lg">
-    <Skeleton className="h-[400px] w-full" />
-    <div className="p-4 space-y-2">
-      <Skeleton className="h-6 w-3/4" />
-      <Skeleton className="h-4 w-1/2" />
-      <div className="flex gap-2">
-        <Skeleton className="h-8 w-20" />
-        <Skeleton className="h-8 w-8" />
-      </div>
-    </div>
-  </div>
-)
-
-const SpotGridSkeleton = () => (
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
-    {[...Array(6)].map((_, i) => (
-      <SpotCardSkeleton key={i} />
-    ))}
-  </div>
-)
+import { useQueryClient } from '@tanstack/react-query'
+import { useSavedSpots } from '@/contexts/SavedSpotsContext'
+import FullScreenMap from '@/components/ui/FullScreenMap'
 
 const HomePage = () => {
-  const [spots, setSpots] = useState([])
+  const queryClient = useQueryClient()
   const [filteredSpots, setFilteredSpots] = useState([])
   const { isFullScreenMapOpen, setIsFullScreenMapOpen } = useHeader()
+  const { showSavedOnly } = useSavedSpots()
   const [mapCenter, setMapCenter] = useState({
-    lat: 43.6532, // Default to Toronto
+    lat: 43.6532,
     lng: -79.3832,
   })
 
@@ -50,7 +29,7 @@ const HomePage = () => {
   } = useQuery({
     queryKey: ['spots'],
     queryFn: getSpots,
-    select: (data) => data.data || [], // Transform the response
+    select: (data) => data.data || [],
   })
 
   const { data: savedSpotsData, isLoading: savedSpotsLoading } = useQuery({
@@ -68,69 +47,28 @@ const HomePage = () => {
   const loading = spotsLoading || savedSpotsLoading || categoriesLoading
   const error = spotsError
 
-  const handleSaveToggle = useCallback((spotId) => {
-    // We'll handle this with a mutation in a future update
-    setSavedSpotIds((prev) =>
-      prev.includes(spotId)
-        ? prev.filter((id) => id !== spotId)
-        : [...prev, spotId]
-    )
-  }, [])
-
-  const handleFilterChange = useCallback(({ spots: filteredSpots }) => {
-    setFilteredSpots(filteredSpots || []) // Ensure we always set an array
-  }, [])
-
-  const handleViewChange = (isMapView) => {
-    setIsFullScreenMapOpen(isMapView)
-  }
-
-  // Add effect to reset filters when navigating back
-  useEffect(() => {
-    const handlePopState = () => {
-      // Reset filters when user clicks back
-      setFilteredSpots([])
-      updateLocation({
-        lat: null,
-        lng: null,
-        address: '',
-      })
+  const handleFilterChange = useCallback(({ spots: newFilteredSpots }) => {
+    if (Array.isArray(newFilteredSpots)) {
+      setFilteredSpots(newFilteredSpots)
     }
-
-    window.addEventListener('popstate', handlePopState)
-    return () => window.removeEventListener('popstate', handlePopState)
   }, [])
 
-  if (loading) {
-    return (
-      <>
-        <Sidebar
-          onFilterChange={handleFilterChange}
-          categories={[]}
-          loading={loading}
-          error={error}
-          isFullScreenMapOpen={isFullScreenMapOpen}
-          onViewChange={handleViewChange}
-          mapCenter={mapCenter}
-          setMapCenter={setMapCenter}
-        />
-        <div className="flex-1 ml-64">
-          <SpotGridSkeleton />
-        </div>
-      </>
-    )
-  }
+  const handleViewChange = useCallback(
+    (isMapView) => {
+      setIsFullScreenMapOpen(isMapView)
+    },
+    [setIsFullScreenMapOpen]
+  )
 
-  if (error) {
-    return (
-      <div className="flex justify-center p-8 text-red-500">
-        Error: {error.message}
-      </div>
-    )
-  }
+  const displayableSpots = useMemo(() => {
+    return showSavedOnly
+      ? spotsData?.filter((spot) => savedSpotsData?.includes(spot.id)) || []
+      : spotsData || []
+  }, [showSavedOnly, spotsData, savedSpotsData])
 
-  const displaySpots =
-    filteredSpots.length > 0 ? filteredSpots : spotsData || []
+  const displaySpots = useMemo(() => {
+    return filteredSpots.length > 0 ? filteredSpots : displayableSpots
+  }, [filteredSpots, displayableSpots])
 
   return (
     <>
@@ -139,7 +77,7 @@ const HomePage = () => {
         categories={categoriesData}
         loading={loading}
         error={error}
-        spots={spotsData}
+        spots={displayableSpots}
         isFullScreenMapOpen={isFullScreenMapOpen}
         onViewChange={handleViewChange}
         mapCenter={mapCenter}
@@ -156,7 +94,10 @@ const HomePage = () => {
           <SpotGrid
             spots={displaySpots}
             savedSpotIds={savedSpotsData}
-            onSaveToggle={handleSaveToggle}
+            onSaveToggle={async () => {
+              await queryClient.invalidateQueries(['spots'])
+              await queryClient.invalidateQueries(['savedSpots'])
+            }}
           />
         )}
       </div>

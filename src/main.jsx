@@ -5,6 +5,7 @@ import { UserProvider } from '@/contexts/UserContext'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { LocationProvider } from '@/contexts/LocationContext'
+import { SavedSpotsProvider } from '@/contexts/SavedSpotsContext'
 
 import HomePage from '@/pages/HomePage.jsx'
 import SpotPage from '@/pages/SpotPage.jsx'
@@ -13,7 +14,6 @@ import AddSpotPage from '@/pages/AddSpotPage.jsx'
 import { HeaderProvider } from '@/contexts/HeaderContext'
 import './index.css'
 import 'leaflet/dist/leaflet.css'
-import SavedSpots from '@/components/SavedSpots'
 import ProfilePage from '@/pages/ProfilePage'
 
 const queryClient = new QueryClient({
@@ -31,17 +31,18 @@ createRoot(document.getElementById('root')).render(
       <UserProvider>
         <HeaderProvider>
           <LocationProvider>
-            <BrowserRouter>
-              <Routes>
-                <Route element={<Layout />}>
-                  <Route index element={<HomePage />} />
-                  <Route path="/spot/:id" element={<SpotPage />} />
-                  <Route path="/add-spot" element={<AddSpotPage />} />
-                  <Route path="/saved-spots" element={<SavedSpots />} />
-                  <Route path="/profile" element={<ProfilePage />} />
-                </Route>
-              </Routes>
-            </BrowserRouter>
+            <SavedSpotsProvider>
+              <BrowserRouter>
+                <Routes>
+                  <Route element={<Layout />}>
+                    <Route index element={<HomePage />} />
+                    <Route path="/spot/:id" element={<SpotPage />} />
+                    <Route path="/add-spot" element={<AddSpotPage />} />
+                    <Route path="/profile" element={<ProfilePage />} />
+                  </Route>
+                </Routes>
+              </BrowserRouter>
+            </SavedSpotsProvider>
           </LocationProvider>
         </HeaderProvider>
       </UserProvider>

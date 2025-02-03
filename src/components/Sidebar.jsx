@@ -1,8 +1,8 @@
-import { Search, Map, X, LayoutGrid, Grid3x3 } from 'lucide-react'
+import { Search, Map, LayoutGrid } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useJsApiLoader, Autocomplete } from '@react-google-maps/api'
 import { Skeleton } from '@/components/ui/skeleton'
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
@@ -15,44 +15,87 @@ import { calculateDistance } from '@/lib/utils'
 // Define libraries and mapContainerStyle outside component
 const libraries = ['places']
 
-const CategorySkeleton = () => (
-  <div className="flex flex-wrap gap-2">
-    {[...Array(6)].map((_, i) => (
-      <Skeleton key={i} className="h-9 w-20 rounded-full" />
-    ))}
-  </div>
-)
-
 const Sidebar = ({
   onFilterChange,
   categories,
   loading,
-  error,
   spots,
   isFullScreenMapOpen,
   onViewChange,
+  mapCenter,
+  setMapCenter,
 }) => {
   const { location, searchRadius, updateLocation, updateSearchRadius } =
     useLocation()
   const [selectedCategories, setSelectedCategories] = useState([])
   const [searchQuery, setSearchQuery] = useState('')
-  const [mapCenter, setMapCenter] = useState([-6.2088, 106.8456]) // Default coordinates
+  // eslint-disable-next-line no-unused-vars
   const [userLocation, setUserLocation] = useState(null)
-  const [searchInput, setSearchInput] = useState('')
   const [autocomplete, setAutocomplete] = useState(null)
 
+  // eslint-disable-next-line no-unused-vars
   const { isLoaded, loadError: apiLoadError } = useJsApiLoader({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
     libraries,
   })
 
-  const autocompleteRef = useRef(null)
   const navigate = useNavigate()
 
-  const onLoad = (autocomplete) => {
-    setAutocomplete(autocomplete)
-  }
+  // Memoize the filter function
+  const applyFilters = useCallback(
+    (currentSpots, categories, radius, loc) => {
+      if (!currentSpots) return
 
+      let filteredResults = [...currentSpots]
+
+      if (loc?.lat && loc?.lng) {
+        filteredResults = filteredResults.filter((spot) => {
+          if (!spot.latitude || !spot.longitude) return false
+          const distance = calculateDistance(
+            loc.lat,
+            loc.lng,
+            parseFloat(spot.latitude),
+            parseFloat(spot.longitude)
+          )
+          return distance <= radius
+        })
+      }
+
+      if (categories.length > 0) {
+        filteredResults = filteredResults.filter((spot) =>
+          categories.some((categoryId) => spot.categories?.includes(categoryId))
+        )
+      }
+
+      onFilterChange({ spots: filteredResults })
+    },
+    [onFilterChange]
+  )
+
+  // Handle filter changes
+  const handleDistanceChange = useCallback(
+    ([value]) => {
+      updateSearchRadius(value)
+      applyFilters(spots, selectedCategories, value, location)
+    },
+    [updateSearchRadius, spots, selectedCategories, location, applyFilters]
+  )
+
+  const toggleCategory = useCallback(
+    (categoryId) => {
+      setSelectedCategories((prev) => {
+        const newCategories = prev.includes(categoryId)
+          ? prev.filter((c) => c !== categoryId)
+          : [...prev, categoryId]
+
+        applyFilters(spots, newCategories, searchRadius, location)
+        return newCategories
+      })
+    },
+    [spots, searchRadius, location, applyFilters]
+  )
+
+  // Initial geolocation
   useEffect(() => {
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
@@ -62,59 +105,38 @@ const Sidebar = ({
             position.coords.longitude,
           ]
           setUserLocation(newLocation)
-          setMapCenter(newLocation)
+          setMapCenter?.(newLocation)
         },
-        (error) => {
-          console.log('Error getting location:', error)
-        }
+        (error) => console.log('Error getting location:', error)
       )
     }
-  }, [])
+  }, [setMapCenter]) // Empty dependency array
 
   // Update map center when location changes
   useEffect(() => {
     if (location?.lat && location?.lng) {
-      setMapCenter([location.lat, location.lng])
+      setMapCenter?.([location.lat, location.lng])
     }
-  }, [location])
+  }, [location?.lat, location?.lng, setMapCenter])
 
-  // Update useEffect to include category filtering
+  // Apply filters when spots or location changes
   useEffect(() => {
     if (spots) {
-      let filteredResults = [...spots]
-
-      // Filter by location if set
-      if (location?.lat && location?.lng) {
-        filteredResults = filteredResults.filter((spot) => {
-          if (!spot.latitude || !spot.longitude) return false
-
-          const distance = calculateDistance(
-            location.lat,
-            location.lng,
-            parseFloat(spot.latitude),
-            parseFloat(spot.longitude)
-          )
-          return distance <= searchRadius
-        })
-      }
-
-      // Filter by categories if any are selected
-      if (selectedCategories.length > 0) {
-        filteredResults = filteredResults.filter((spot) =>
-          selectedCategories.some((categoryId) =>
-            spot.categories?.includes(categoryId)
-          )
-        )
-      }
-
-      onFilterChange({
-        spots: filteredResults,
-        categories: selectedCategories,
-        distance: searchRadius,
-        location,
-      })
+      applyFilters(spots, selectedCategories, searchRadius, location)
     }
-  }, [location, searchRadius, spots, selectedCategories, onFilterChange])
+  }, [
+    spots,
+    location?.lat,
+    location?.lng,
+    applyFilters,
+    location,
+    selectedCategories,
+    searchRadius,
+  ]) // Only reapply when spots or location coordinates change
+
+  const onLoad = (autocomplete) => {
+    setAutocomplete(autocomplete)
+  }
 
   const onPlaceChanged = () => {
     if (autocomplete !== null) {
@@ -127,50 +149,8 @@ const Sidebar = ({
         }
         updateLocation(newLocation)
         setSearchQuery(place.formatted_address)
-
-        // Filter spots based on new location
-        if (spots) {
-          const nearbySpots = spots.filter((spot) => {
-            if (!spot.latitude || !spot.longitude) return false
-            const distance = calculateDistance(
-              newLocation.lat,
-              newLocation.lng,
-              parseFloat(spot.latitude),
-              parseFloat(spot.longitude)
-            )
-            return distance <= searchRadius
-          })
-          onFilterChange({
-            spots: nearbySpots,
-            categories: selectedCategories,
-            distance: searchRadius,
-            location: newLocation,
-          })
-        }
-
-        // Add to browser history so back button works
-        window.history.pushState({ filtered: true }, '')
       }
     }
-  }
-
-  const handleDistanceChange = ([value]) => {
-    updateSearchRadius(value)
-  }
-
-  const toggleCategory = (categoryId) => {
-    const newCategories = selectedCategories.includes(categoryId)
-      ? selectedCategories.filter((c) => c !== categoryId)
-      : [...selectedCategories, categoryId]
-
-    setSelectedCategories(newCategories)
-
-    onFilterChange({
-      categories: newCategories,
-      distance: searchRadius,
-      location,
-      searchQuery,
-    })
   }
 
   // Custom marker icon

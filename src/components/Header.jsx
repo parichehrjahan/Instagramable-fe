@@ -1,7 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Bookmark, Plus, LogOut, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { useNavigate, useLocation } from 'react-router'
+import { useNavigate, Link } from 'react-router'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,23 +10,19 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useUser } from '@/contexts/UserContext'
+import { useQueryClient } from '@tanstack/react-query'
+import { useSavedSpots } from '@/contexts/SavedSpotsContext'
 
 const Header = () => {
   const navigate = useNavigate()
-  const location = useLocation()
   const { user } = useUser()
-  const isOnSavedSpots = location.pathname === '/saved-spots'
+  const queryClient = useQueryClient()
+  const { showSavedOnly, toggleSavedSpots } = useSavedSpots()
 
-  const handleAddSpot = () => {
-    navigate('/add-spot')
-  }
-
-  const handleSavedSpotsToggle = () => {
-    if (isOnSavedSpots) {
-      navigate('/')
-    } else {
-      navigate('/saved-spots')
-    }
+  const handleBookmarkClick = async () => {
+    toggleSavedSpots()
+    await queryClient.invalidateQueries(['spots'])
+    await queryClient.invalidateQueries(['savedSpots'])
   }
 
   const handleLogout = () => {
@@ -38,23 +34,23 @@ const Header = () => {
   }
 
   return (
-    <header className="sticky top-0 z-10 w-full border-b bg-white backdrop-blur ">
+    <header className="sticky top-0 z-10 w-full border-b bg-white backdrop-blur">
       <div className="px-4 flex h-16 items-center justify-between w-full">
         {/* Logo */}
         <div className="p-4">
-          <a
-            href="/"
+          <Link
+            to="/"
             className="text-4xl"
             style={{ fontFamily: "'Satisfy', cursive" }}
           >
             Instagramable
-          </a>
+          </Link>
         </div>
         <div className="flex items-center gap-6">
           <Button
             variant="ghost"
             size="icon"
-            onClick={handleAddSpot}
+            onClick={() => navigate('/add-spot')}
             className="hover:bg-gray-100 rounded-full"
           >
             <Plus className="h-6 w-6" />
@@ -62,12 +58,13 @@ const Header = () => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={handleSavedSpotsToggle}
+            onClick={handleBookmarkClick}
             className="hover:bg-gray-100 p-2"
+            title={showSavedOnly ? 'View all spots' : 'View saved spots'}
           >
             <Bookmark
               className={`transform scale-150 cursor-pointer hover:opacity-80 transition-opacity text-black ${
-                isOnSavedSpots ? 'fill-current' : ''
+                showSavedOnly ? 'fill-current' : ''
               }`}
             />
           </Button>
@@ -75,11 +72,11 @@ const Header = () => {
             <DropdownMenuTrigger asChild>
               <Avatar className="h-8 w-8 cursor-pointer hover:opacity-80 transition-opacity">
                 <AvatarImage
-                  src={user?.profileImage || 'https://github.com/shadcn.png'}
+                  src={user?.profile_picture || 'https://github.com/shadcn.png'}
                   alt="Profile"
                   className="object-cover"
                 />
-                <AvatarFallback>{user?.name?.[0] || 'U'}</AvatarFallback>
+                <AvatarFallback>{user?.username?.[0] || 'U'}</AvatarFallback>
               </Avatar>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">

@@ -1,7 +1,6 @@
 import { useUser } from '@/contexts/UserContext'
 import { useState } from 'react'
 import { EditProfileDialog } from '@/components/EditProfileDialog'
-import supabase from '@/lib/supabaseClient'
 import { updateProfileImage } from '@/lib/utils'
 
 function ProfilePage() {
