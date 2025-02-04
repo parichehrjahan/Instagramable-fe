@@ -5,14 +5,7 @@ const UserContext = createContext({})
 
 // eslint-disable-next-line react/prop-types
 export function UserProvider({ children }) {
-  const [user, setUser] = useState({
-    username: 'username',
-    fullName: 'Full Name',
-    bio: 'Bio goes here',
-    prfoile_picture: 'https://github.com/shadcn.png',
-    followers: [],
-    following: [],
-  })
+  const [user, setUser] = useState(null)
   const [session, setSession] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -45,7 +38,7 @@ export function UserProvider({ children }) {
     try {
       const { data, error } = await supabase
         .from('users')
-        .select('*')
+        .select('id, username, bio, profile_picture, created_at')
         .eq('id', userId)
         .single()
 

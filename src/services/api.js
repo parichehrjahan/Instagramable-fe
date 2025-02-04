@@ -375,3 +375,25 @@ export const getReviewCounts = async (reviewId) => {
     throw error
   }
 }
+
+export const updateUserProfile = async (userData) => {
+  try {
+    const headers = await getAuthHeaders()
+    const response = await fetch(`${API_URL}/users/profile`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(userData),
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.error || 'Failed to update profile')
+    }
+
+    const data = await response.json()
+    return data
+  } catch (error) {
+    console.error('Error updating user profile:', error)
+    throw error
+  }
+}
