@@ -48,8 +48,7 @@ const SpotPage = () => {
   const userReviewInteractions = spot?.user_review_interaction
 
   // Filter images based on is_gallery flag
-  const carouselImages =
-    spotImages?.filter((image) => image.is_gallery === false) || [] // Only false for carousel
+  const carouselImages = spotImages
   const galleryImages =
     spotImages?.filter((image) => image.is_gallery === true) || [] // Only true for gallery
 
@@ -65,12 +64,12 @@ const SpotPage = () => {
     )
   }
 
-  const handleReviewSubmitted = (newReview) => {
+  const handleReviewSubmitted = () => {
     // React Query will automatically refetch the reviews
     queryClient.invalidateQueries(['reviews', id])
   }
 
-  const handleDeleteImage = async (imageId) => {
+  const handleDeleteImage = async () => {
     // TODO: Implement image deletion logic
     // Call your API endpoint to delete the image
     // Then invalidate the spot query to refresh the data
