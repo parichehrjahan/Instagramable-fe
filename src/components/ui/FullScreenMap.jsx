@@ -4,7 +4,6 @@ import {
   Marker,
   Popup,
   ZoomControl,
-  useMap,
 } from 'react-leaflet'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -12,6 +11,8 @@ import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router'
+import MapController from '../MapController'
+import { useLocation } from '@/contexts/LocationContext'
 
 // Create a custom pin icon
 const createPinIcon = (color = '#FF0000') =>
@@ -107,25 +108,6 @@ const SpotPopup = ({ spot }) => {
   )
 }
 
-// Map bounds controller component
-const MapBoundsController = ({ spots }) => {
-  const map = useMap()
-
-  useEffect(() => {
-    if (spots && spots.length > 0) {
-      const bounds = L.latLngBounds(
-        spots.map((spot) => [
-          parseFloat(spot.latitude),
-          parseFloat(spot.longitude),
-        ])
-      )
-      map.fitBounds(bounds, { padding: [50, 50] })
-    }
-  }, [spots, map])
-
-  return null
-}
-
 const SpotMarker = ({ spot }) => {
   const markerRef = useRef(null)
   const popupRef = useRef(null)
@@ -156,34 +138,50 @@ const SpotMarker = ({ spot }) => {
   )
 }
 
-const FullScreenMap = ({ spots = [], isOpen, onClose, onSpotClick }) => {
-  const [userLocation, setUserLocation] = useState(null)
+const FullScreenMap = ({ spots = [], isOpen, onClose }) => {
+  const { location } = useLocation()
 
+  const [userLocation, setUserLocation] = useState(null)
+  const [mapCenter, setMapCenter] = useState(
+    location?.lat && location?.lng
+      ? [location.lat, location.lng]
+      : defaultCenter
+  )
+
+  // Update center when location changes
   useEffect(() => {
-    if ('geolocation' in navigator) {
+    if (location?.lat && location?.lng) {
+      console.log('FullScreenMap: Location changed to', [
+        location.lat,
+        location.lng,
+      ])
+      setMapCenter([location.lat, location.lng])
+    }
+  }, [location?.lat, location?.lng]) // More specific dependencies
+
+  // Get user location only once
+  useEffect(() => {
+    if (!location?.lat && !location?.lng && 'geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setUserLocation([position.coords.latitude, position.coords.longitude])
+          const newLocation = [
+            position.coords.latitude,
+            position.coords.longitude,
+          ]
+          setUserLocation(newLocation)
+          setMapCenter(newLocation)
         },
         (error) => {
           console.error('Error getting location:', error)
         }
       )
     }
-  }, [])
+  }, [location])
 
   if (!isOpen) return null
 
   const validSpots =
     spots?.filter((spot) => spot?.latitude && spot?.longitude) || []
-  const initialCenter =
-    userLocation ||
-    (validSpots[0]
-      ? [
-          parseFloat(validSpots[0].latitude),
-          parseFloat(validSpots[0].longitude),
-        ]
-      : defaultCenter)
 
   return (
     <div className="fixed inset-0 z-40">
@@ -192,11 +190,7 @@ const FullScreenMap = ({ spots = [], isOpen, onClose, onSpotClick }) => {
         <div className="flex items-center gap-2">
           {userLocation && (
             <Button
-              onClick={() => {
-                if (mapRef.current) {
-                  mapRef.current.setView(userLocation, 13)
-                }
-              }}
+              onClick={() => setMapCenter(userLocation)}
               variant="secondary"
               className="bg-white/10 hover:bg-white/20"
               title="Go to my location"
@@ -215,12 +209,12 @@ const FullScreenMap = ({ spots = [], isOpen, onClose, onSpotClick }) => {
       </div>
 
       <MapContainer
-        center={initialCenter}
+        center={mapCenter}
         zoom={13}
         style={{ height: '100vh', width: '100vw' }}
         zoomControl={false}
       >
-        <MapBoundsController spots={validSpots} />
+        <MapController center={mapCenter} />
         <ZoomControl position="bottomright" />
         <TileLayer
           attribution='&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>'
