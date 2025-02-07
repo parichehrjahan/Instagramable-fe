@@ -2,6 +2,7 @@ import { useUser } from '@/contexts/UserContext'
 import { useState } from 'react'
 import { EditProfileDialog } from '@/components/EditProfileDialog'
 import { updateProfileImage } from '@/lib/utils'
+import { optimizeImage } from '@/lib/imageUtils'
 
 function ProfilePage() {
   const { user, updateUser } = useUser()
@@ -19,7 +20,10 @@ function ProfilePage() {
       setUploading(true)
       if (!file) return
 
-      const publicUrl = await updateProfileImage(file, user.id)
+      // Optimize image before upload
+      const optimizedFile = await optimizeImage(file, 800) // Smaller max width for profile pictures
+
+      const publicUrl = await updateProfileImage(optimizedFile, user.id)
       updateUser({ ...user, profileImage: publicUrl })
     } catch (error) {
       console.error('Error uploading image:', error)

@@ -59,55 +59,27 @@ export const uploadImageToSupabase = async (
 }
 
 // Function to upload profile image and update profile
-export const updateProfileImage = async (file) => {
-  try {
-    // Generate file name
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) throw new Error('No authenticated user')
+export const updateProfileImage = async (file, userId) => {
+  const fileName = `${userId}-${Date.now()}.webp`
+  const filePath = `profiles/${fileName}`
 
-    const fileExt = file.name.split('.').pop()
-    const fileName = `${user.id}-${Date.now()}.${fileExt}`
-    const filePath = `profiles/${fileName}`
+  const { error: uploadError } = await supabase.storage
+    .from('user_images')
+    .upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: true,
+      contentType: 'image/webp',
+    })
 
-    // Upload to user_images bucket
-    const { error: uploadError } = await supabase.storage
-      .from('user_images')
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: true,
-        contentType: file.type,
-      })
-
-    if (uploadError) {
-      console.error('Upload error:', uploadError)
-      throw uploadError
-    }
-
-    // Get public URL
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from('user_images').getPublicUrl(filePath)
-
-    // Update user profile with new image URL - removed updated_at
-    const { error: updateError } = await supabase
-      .from('users')
-      .update({
-        profile_picture: publicUrl,
-      })
-      .eq('id', user.id)
-
-    if (updateError) {
-      console.error('Update error:', updateError)
-      throw updateError
-    }
-
-    return publicUrl
-  } catch (error) {
-    console.error('Error in updateProfileImage:', error)
-    throw error
+  if (uploadError) {
+    throw uploadError
   }
+
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from('user_images').getPublicUrl(filePath)
+
+  return publicUrl
 }
 
 // Function to upload multiple spot images

@@ -9,6 +9,7 @@ import SpotReview from '@/components/SpotReview'
 import { useState, useEffect } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
 import supabase from '@/lib/supabaseClient'
+import { optimizeImage } from '@/lib/imageUtils'
 
 const SpotPage = () => {
   const { id } = useParams()
@@ -86,6 +87,9 @@ const SpotPage = () => {
     if (!file) return
 
     try {
+      // Optimize image before upload
+      const optimizedFile = await optimizeImage(file)
+
       const {
         data: { session },
         error: authError,
@@ -95,18 +99,17 @@ const SpotPage = () => {
         throw new Error('Please login to upload images')
       }
 
-      // Create unique filename
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+      // Create unique filename with .webp extension
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.webp`
       const filePath = `spots/${fileName}`
 
-      // Upload to Supabase storage using 'images' bucket
+      // Upload optimized file to Supabase storage
       const { error: uploadError } = await supabase.storage
         .from('images')
-        .upload(filePath, file, {
+        .upload(filePath, optimizedFile, {
           cacheControl: '3600',
           upsert: false,
-          contentType: file.type,
+          contentType: 'image/webp',
         })
 
       if (uploadError) {
