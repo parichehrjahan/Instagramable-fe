@@ -70,15 +70,30 @@ const SpotPage = () => {
     queryClient.invalidateQueries(['reviews', id])
   }
 
-  const handleDeleteImage = async () => {
-    // TODO: Implement image deletion logic
-    // Call your API endpoint to delete the image
-    // Then invalidate the spot query to refresh the data
+  const handleDeleteImage = async (imageUrl) => {
     try {
-      // await deleteSpotImage(imageId);
+      const {
+        data: { session },
+        error: authError,
+      } = await supabase.auth.getSession()
+
+      if (authError || !session) {
+        throw new Error('Please login to delete images')
+      }
+
+      const { error } = await supabase.rpc('delete_spot_and_user_image', {
+        p_image_url: imageUrl,
+        p_user_id: session.user.id,
+      })
+
+      if (error) throw error
+
+      // Refresh the spot data
       queryClient.invalidateQueries(['spot', id])
+      await queryClient.refetchQueries(['spot', id])
     } catch (error) {
       console.error('Failed to delete image:', error)
+      alert(error.message || 'Failed to delete image. Please try again.')
     }
   }
 
@@ -122,24 +137,24 @@ const SpotPage = () => {
         data: { publicUrl },
       } = supabase.storage.from('images').getPublicUrl(filePath)
 
-      // Save to spot_images table with is_gallery flag
-      const { error: dbError } = await supabase.from('spot_images').insert({
-        spot_id: id,
-        image_url: publicUrl,
-        is_gallery: true, // Mark as gallery image
-        caption: null, // Optional caption can be added later
-        user_id: session.user.id,
-      })
+      // Start a Supabase transaction to insert into both tables
+      const { error: transactionError } = await supabase.rpc(
+        'add_spot_and_user_image',
+        {
+          p_spot_id: id,
+          p_user_id: session.user.id,
+          p_image_url: publicUrl,
+          p_is_gallery: true,
+        }
+      )
 
-      if (dbError) {
-        console.error('Database error:', dbError)
-        throw dbError
+      if (transactionError) {
+        console.error('Transaction error:', transactionError)
+        throw transactionError
       }
 
-      // Immediately refresh the spot data
+      // Refresh the spot data
       queryClient.invalidateQueries(['spot', id])
-
-      // Force refetch the spot data
       await queryClient.refetchQueries(['spot', id])
     } catch (error) {
       console.error('Failed to upload image:', error)
@@ -256,7 +271,7 @@ const SpotPage = () => {
                 />
                 {image.user_id === currentUserId && (
                   <button
-                    onClick={() => handleDeleteImage(image.id)}
+                    onClick={() => handleDeleteImage(image.image_url)}
                     className="absolute top-2 right-2 p-2 bg-red-500 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <X className="h-4 w-4" />

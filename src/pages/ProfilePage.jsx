@@ -1,14 +1,43 @@
 import { useUser } from '@/contexts/UserContext'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { EditProfileDialog } from '@/components/EditProfileDialog'
 import { updateProfileImage } from '@/lib/utils'
 import { optimizeImage } from '@/lib/imageUtils'
+import supabase from '@/lib/supabaseClient'
 
 function ProfilePage() {
   const { user, updateUser } = useUser()
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [posts, setPosts] = useState([]) // You'll need to fetch actual posts
+  const [userImages, setUserImages] = useState([])
   const [uploading, setUploading] = useState(false)
+  const [loading, setLoading] = useState(true)
+
+  // Fetch user images
+  useEffect(() => {
+    async function fetchUserImages() {
+      try {
+        if (!user?.id) return
+
+        const { data, error } = await supabase
+          .from('user_images')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+
+        if (error) {
+          throw error
+        }
+
+        setUserImages(data || [])
+      } catch (error) {
+        console.error('Error fetching user images:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchUserImages()
+  }, [user?.id])
 
   const handleEditProfile = (updatedData) => {
     // Here you would typically make an API call to update the user data
@@ -100,7 +129,7 @@ function ProfilePage() {
           {/* Stats */}
           <div className="flex gap-10 mb-5">
             <div>
-              <span className="font-semibold">{posts.length}</span> posts
+              <span className="font-semibold">{userImages.length}</span> posts
             </div>
             <div>
               <span className="font-semibold">
@@ -149,19 +178,39 @@ function ProfilePage() {
 
       {/* Posts Grid */}
       <div className="grid grid-cols-3 gap-[2px] mt-4">
-        {[1, 2, 3, 4, 5, 6].map((_, i) => (
-          <div
-            key={i}
-            className="relative aspect-square bg-gray-100 cursor-pointer group"
-          >
-            <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-              <div className="flex gap-8 text-white font-semibold">
-                <span className="flex items-center gap-2">❤️ 0</span>
-                <span className="flex items-center gap-2">💬 0</span>
+        {loading ? (
+          // Loading skeleton
+          [...Array(6)].map((_, i) => (
+            <div
+              key={i}
+              className="relative aspect-square bg-gray-200 animate-pulse"
+            />
+          ))
+        ) : userImages.length > 0 ? (
+          userImages.map((image) => (
+            <div
+              key={image.id}
+              className="relative aspect-square cursor-pointer group"
+            >
+              <img
+                src={image.image_url}
+                alt="User post"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <div className="flex gap-8 text-white font-semibold">
+                  <span className="flex items-center gap-2">❤️ 0</span>
+                  <span className="flex items-center gap-2">💬 0</span>
+                </div>
               </div>
             </div>
+          ))
+        ) : (
+          // No posts message
+          <div className="col-span-3 py-8 text-center text-gray-500">
+            No posts yet
           </div>
-        ))}
+        )}
       </div>
 
       {/* Add the EditProfileDialog */}
