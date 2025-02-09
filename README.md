@@ -129,3 +129,7 @@ You can find global styles in `src/index.css` and component-specific styles in `
 - [React Documentation](https://react.dev/)
 - [ESLint Documentation](https://eslint.org/)
 - [Prettier Documentation](https://prettier.io/)
+
+## Hosting
+
+This project will be hosted on Vercel.
