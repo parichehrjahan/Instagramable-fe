@@ -141,7 +141,7 @@ const SpotMarker = ({ spot }) => {
 const FullScreenMap = ({ spots = [], isOpen, onClose }) => {
   const { location } = useLocation()
   const [userLocation, setUserLocation] = useState(null)
-  const [mapCenter, setMapCenter] = useState(defaultCenter)
+  const [mapCenter, setMapCenter] = useState(null)
 
   // Get user location immediately
   useEffect(() => {
@@ -153,14 +153,14 @@ const FullScreenMap = ({ spots = [], isOpen, onClose }) => {
             position.coords.longitude,
           ]
           setUserLocation(newLocation)
-          // Only set map center if location context is not available
+          // Set map center if location context is not available
           if (!location?.lat && !location?.lng) {
             setMapCenter(newLocation)
           }
         },
         (error) => {
           console.error('Error getting location:', error)
-          // Only fall back to location context or default if geolocation fails
+          // Fall back to location context if geolocation fails
           if (location?.lat && location?.lng) {
             setMapCenter([location.lat, location.lng])
           }
@@ -177,6 +177,7 @@ const FullScreenMap = ({ spots = [], isOpen, onClose }) => {
   }, [location?.lat, location?.lng])
 
   if (!isOpen) return null
+  if (!mapCenter) return null // Don't render map until we have a valid center
 
   const validSpots =
     spots?.filter((spot) => spot?.latitude && spot?.longitude) || []
