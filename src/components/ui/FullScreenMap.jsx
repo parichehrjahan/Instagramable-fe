@@ -29,7 +29,7 @@ const createPinIcon = (color = '#FF0000') =>
     popupAnchor: [0, -36],
   })
 
-const defaultCenter = [-6.2088, 106.8456] // Fallback center
+const defaultCenter = [0, 0] // Neutral starting point
 
 const SpotPopup = ({ spot }) => {
   const navigate = useNavigate()
@@ -140,28 +140,12 @@ const SpotMarker = ({ spot }) => {
 
 const FullScreenMap = ({ spots = [], isOpen, onClose }) => {
   const { location } = useLocation()
-
   const [userLocation, setUserLocation] = useState(null)
-  const [mapCenter, setMapCenter] = useState(
-    location?.lat && location?.lng
-      ? [location.lat, location.lng]
-      : defaultCenter
-  )
+  const [mapCenter, setMapCenter] = useState(defaultCenter)
 
-  // Update center when location changes
+  // Get user location immediately
   useEffect(() => {
-    if (location?.lat && location?.lng) {
-      console.log('FullScreenMap: Location changed to', [
-        location.lat,
-        location.lng,
-      ])
-      setMapCenter([location.lat, location.lng])
-    }
-  }, [location?.lat, location?.lng]) // More specific dependencies
-
-  // Get user location only once
-  useEffect(() => {
-    if (!location?.lat && !location?.lng && 'geolocation' in navigator) {
+    if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const newLocation = [
@@ -169,14 +153,28 @@ const FullScreenMap = ({ spots = [], isOpen, onClose }) => {
             position.coords.longitude,
           ]
           setUserLocation(newLocation)
-          setMapCenter(newLocation)
+          // Only set map center if location context is not available
+          if (!location?.lat && !location?.lng) {
+            setMapCenter(newLocation)
+          }
         },
         (error) => {
           console.error('Error getting location:', error)
+          // Only fall back to location context or default if geolocation fails
+          if (location?.lat && location?.lng) {
+            setMapCenter([location.lat, location.lng])
+          }
         }
       )
     }
-  }, [location])
+  }, [])
+
+  // Update center when location context changes
+  useEffect(() => {
+    if (location?.lat && location?.lng) {
+      setMapCenter([location.lat, location.lng])
+    }
+  }, [location?.lat, location?.lng])
 
   if (!isOpen) return null
 
