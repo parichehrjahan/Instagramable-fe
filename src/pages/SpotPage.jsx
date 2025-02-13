@@ -10,12 +10,15 @@ import { useState, useEffect } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
 import supabase from '@/lib/supabaseClient'
 import { optimizeImage } from '@/lib/imageUtils'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
 
 const SpotPage = () => {
   const { id } = useParams()
   const [currentImage, setCurrentImage] = useState(0)
   const queryClient = useQueryClient()
   const [currentUserId, setCurrentUserId] = useState(null)
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false)
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0)
 
   // Add this useEffect to get the current user
   useEffect(() => {
@@ -166,6 +169,21 @@ const SpotPage = () => {
     reviews?.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at)) ||
     []
 
+  const openImageModal = (index) => {
+    setSelectedImageIndex(index)
+    setIsImageModalOpen(true)
+  }
+
+  const handleNextImage = () => {
+    setSelectedImageIndex((prev) => (prev + 1) % galleryImages.length)
+  }
+
+  const handlePrevImage = () => {
+    setSelectedImageIndex(
+      (prev) => (prev - 1 + galleryImages.length) % galleryImages.length
+    )
+  }
+
   if (spotLoading)
     return (
       <div className="max-w-4xl mx-auto p-4 space-y-6">
@@ -267,7 +285,8 @@ const SpotPage = () => {
                 <img
                   src={image.image_url}
                   alt={`Spot image ${idx + 1}`}
-                  className="w-full h-48 object-cover rounded-lg"
+                  className="w-full h-48 object-cover rounded-lg cursor-pointer"
+                  onClick={() => openImageModal(idx)}
                 />
                 {image.user_id === currentUserId && (
                   <button
@@ -293,6 +312,45 @@ const SpotPage = () => {
             </label>
           </div>
         </Card>
+
+        {/* Add the Image Modal */}
+        <Dialog open={isImageModalOpen} onOpenChange={setIsImageModalOpen}>
+          <DialogContent className="max-w-[90vw] h-[90vh] p-0">
+            <div className="relative w-full h-full flex items-center justify-center bg-black">
+              <button
+                onClick={() => setIsImageModalOpen(false)}
+                className="absolute top-4 right-4 p-2 rounded-full bg-black/50 text-white z-50"
+              >
+                <X className="h-6 w-6" />
+              </button>
+
+              {galleryImages.length > 0 && (
+                <img
+                  src={galleryImages[selectedImageIndex].image_url}
+                  alt={`Full size spot image ${selectedImageIndex + 1}`}
+                  className="max-h-full max-w-full object-contain"
+                />
+              )}
+
+              {galleryImages.length > 1 && (
+                <>
+                  <button
+                    onClick={handlePrevImage}
+                    className="absolute left-4 p-2 rounded-full bg-black/50 text-white"
+                  >
+                    <ChevronLeft className="h-6 w-6" />
+                  </button>
+                  <button
+                    onClick={handleNextImage}
+                    className="absolute right-4 p-2 rounded-full bg-black/50 text-white"
+                  >
+                    <ChevronRight className="h-6 w-6" />
+                  </button>
+                </>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Reviews Section */}
         <div className="mt-8">
