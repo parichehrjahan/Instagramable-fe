@@ -56,6 +56,17 @@ const SpotPage = () => {
   const galleryImages =
     spotImages?.filter((image) => image.is_gallery === true) || [] // Only true for gallery
 
+  // Add autoplay interval (5 seconds)
+  useEffect(() => {
+    if (carouselImages?.length > 1) {
+      const interval = setInterval(() => {
+        setCurrentImage((prev) => (prev + 1) % carouselImages.length)
+      }, 3000) // Change image every 3 seconds
+
+      return () => clearInterval(interval)
+    }
+  }, [carouselImages])
+
   const nextImage = (e) => {
     e.stopPropagation()
     setCurrentImage((prev) => (prev + 1) % carouselImages.length)
