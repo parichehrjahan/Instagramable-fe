@@ -397,3 +397,11 @@ export const updateUserProfile = async (userData) => {
     throw error
   }
 }
+
+export const uploadImage = async (formData) => {
+  const response = await fetch('/api/upload', {
+    method: 'POST',
+    body: formData,
+  })
+  return response.json()
+}
