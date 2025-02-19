@@ -3,7 +3,7 @@ import { Star, ImagePlus, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { createReview } from '@/services/api'
+import { createReview, uploadImage } from '@/services/api'
 import { Input } from '@/components/ui/input'
 
 export default function ReviewForm({ spotId, onReviewSubmitted }) {

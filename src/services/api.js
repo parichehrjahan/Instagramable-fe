@@ -399,9 +399,24 @@ export const updateUserProfile = async (userData) => {
 }
 
 export const uploadImage = async (formData) => {
-  const response = await fetch('/api/upload', {
-    method: 'POST',
-    body: formData,
-  })
-  return response.json()
+  try {
+    const headers = await getAuthHeaders()
+    // Remove Content-Type from headers as it will be automatically set for FormData
+    delete headers['Content-Type']
+
+    const response = await fetch(`${API_URL}/upload`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to upload image')
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('Error uploading image:', error)
+    throw error
+  }
 }
