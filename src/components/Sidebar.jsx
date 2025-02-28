@@ -30,11 +30,10 @@ const Sidebar = ({
     useLocation()
   const [selectedCategories, setSelectedCategories] = useState([])
   const [searchQuery, setSearchQuery] = useState('')
-  // eslint-disable-next-line no-unused-vars
   const [userLocation, setUserLocation] = useState(null)
   const [autocomplete, setAutocomplete] = useState(null)
+  const [sliderValue, setSliderValue] = useState(searchRadius)
 
-  // eslint-disable-next-line no-unused-vars
   const { isLoaded, loadError: apiLoadError } = useJsApiLoader({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
     libraries,
@@ -75,9 +74,18 @@ const Sidebar = ({
 
   // Handle filter changes
   const handleDistanceChange = useCallback(
-    ([value]) => {
-      updateSearchRadius(value)
-      applyFilters(spots, selectedCategories, value, location)
+    (value) => {
+      const radius = value[0]
+      setSliderValue(radius)
+
+      // Debounce the actual filter update to avoid too many re-renders
+      // during slider dragging
+      const timeoutId = setTimeout(() => {
+        updateSearchRadius(radius)
+        applyFilters(spots, selectedCategories, radius, location)
+      }, 100)
+
+      return () => clearTimeout(timeoutId)
     },
     [updateSearchRadius, spots, selectedCategories, location, applyFilters]
   )
@@ -101,17 +109,23 @@ const Sidebar = ({
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          const newLocation = [
-            position.coords.latitude,
-            position.coords.longitude,
-          ]
-          setUserLocation(newLocation)
-          setMapCenter?.(newLocation)
+          const newLocation = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          }
+          setUserLocation([newLocation.lat, newLocation.lng])
+
+          // If no location is set yet, use the user's location
+          if (!location?.lat && !location?.lng) {
+            updateLocation(newLocation)
+          }
+
+          setMapCenter?.([newLocation.lat, newLocation.lng])
         },
         (error) => console.log('Error getting location:', error)
       )
     }
-  }, [setMapCenter]) // Empty dependency array
+  }, [setMapCenter, location, updateLocation])
 
   // Update map center when location changes
   useEffect(() => {
@@ -133,7 +147,12 @@ const Sidebar = ({
     location,
     selectedCategories,
     searchRadius,
-  ]) // Only reapply when spots or location coordinates change
+  ])
+
+  // Sync slider value with context searchRadius
+  useEffect(() => {
+    setSliderValue(searchRadius)
+  }, [searchRadius])
 
   const onLoad = (autocomplete) => {
     setAutocomplete(autocomplete)
@@ -180,6 +199,7 @@ const Sidebar = ({
     })
     setSearchQuery('')
     setSelectedCategories([])
+    updateSearchRadius(10) // Reset to default radius
 
     // Reset filtered spots
     onFilterChange({ spots: spots || [] })
@@ -243,7 +263,7 @@ const Sidebar = ({
                 <Input disabled placeholder="Loading..." className="pl-8" />
               )}
             </div>
-            {location && (
+            {location && location.address && (
               <div
                 className={`text-sm ${
                   isFullScreenMapOpen
@@ -266,7 +286,8 @@ const Sidebar = ({
               <Skeleton className="h-2 w-full my-6" />
             ) : (
               <Slider
-                defaultValue={[searchRadius]}
+                value={[sliderValue]}
+                min={1}
                 max={100}
                 step={1}
                 className={`py-4 ${
@@ -280,7 +301,7 @@ const Sidebar = ({
             <div
               className={`text-sm ${isFullScreenMapOpen ? 'text-white' : 'text-muted-foreground'}`}
             >
-              Within {searchRadius} km
+              Within {sliderValue} km
             </div>
           </div>
 

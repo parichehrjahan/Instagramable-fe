@@ -13,6 +13,14 @@ const getAuthHeaders = async () => {
   }
 }
 
+// Helper function to get token
+const getToken = async () => {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  return session?.access_token || ''
+}
+
 export const getSpots = async () => {
   try {
     const headers = await getAuthHeaders()
@@ -43,13 +51,17 @@ export const getSpotById = async (id) => {
 
 export const createReview = async (reviewData) => {
   try {
-    const headers = await getAuthHeaders()
+    const token = await getToken()
     const response = await fetch(`${API_URL}/reviews`, {
       method: 'POST',
-      headers,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
       body: JSON.stringify(reviewData),
     })
-    return await response.json()
+    const data = await response.json()
+    return data
   } catch (error) {
     console.error('Error creating review:', error)
     throw error
@@ -58,11 +70,9 @@ export const createReview = async (reviewData) => {
 
 export const getReviewsBySpotId = async (spotId) => {
   try {
-    const headers = await getAuthHeaders()
-    const response = await fetch(`${API_URL}/reviews/spot/${spotId}`, {
-      headers,
-    })
-    return await response.json()
+    const response = await fetch(`${API_URL}/reviews/spot/${spotId}`)
+    const data = await response.json()
+    return data
   } catch (error) {
     console.error('Error fetching reviews:', error)
     throw error
@@ -232,119 +242,21 @@ export const checkUserInteraction = async (reviewId) => {
   }
 }
 
-export const toggleReviewInteraction = async (reviewId, isLiked, spotId) => {
-  const getNewIsLiked = (existing, isLiked) => {
-    if (isLiked) {
-      return existing.is_liked ? null : true
-    } else {
-      return existing.is_liked ? false : null
-    }
-  }
-
-  const getNewLikeDislikeCount = (currentReview, isLiked, existing) => {
-    const existingLikeCount = currentReview.like_count ?? 0
-    const existingDislikeCount = currentReview.dislike_count ?? 0
-
-    if (existing) {
-      if (isLiked && existing.is_liked) {
-        return {
-          like_count: existingLikeCount - 1,
-          dislike_count: existingDislikeCount,
-        }
-      } else if (isLiked && !existing.is_liked) {
-        return {
-          like_count: existingLikeCount + 1,
-          dislike_count: existingDislikeCount - 1,
-        }
-      } else if (!isLiked && existing.is_liked) {
-        return {
-          like_count: existingLikeCount - 1,
-          dislike_count: existingDislikeCount + 1,
-        }
-      } else if (!isLiked && !existing.is_liked) {
-        return {
-          like_count: existingLikeCount,
-          dislike_count: existingDislikeCount - 1,
-        }
-      }
-    } else {
-      return {
-        like_count: existingLikeCount + (isLiked ? 1 : 0),
-        dislike_count: existingDislikeCount + (isLiked ? 0 : 1),
-      }
-    }
-  }
-
+export const toggleReviewInteraction = async (reviewId, isLiked) => {
   try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) throw new Error('User not authenticated')
-
-    // First, try to get existing interaction
-    const { data: existing } = await supabase
-      .from('review_interactions')
-      .select('*')
-      .eq('review_id', reviewId)
-      .eq('user_id', user.id)
-      .eq('spot_id', spotId)
-      .maybeSingle()
-
-    const { data: currentReview } = await supabase
-      .from('reviews')
-      .select('like_count, dislike_count')
-      .eq('id', reviewId)
-      .maybeSingle()
-
-    if (existing) {
-      // Update existing interaction
-
-      const updateData = getNewLikeDislikeCount(
-        currentReview,
-        isLiked,
-        existing
-      )
-
-      const newIsLiked = getNewIsLiked(existing, isLiked)
-
-      if (newIsLiked !== null) {
-        await supabase
-          .from('review_interactions')
-          .update({ is_liked: newIsLiked })
-          .eq('id', existing.id)
-      } else {
-        await supabase
-          .from('review_interactions')
-          .delete()
-          .eq('id', existing.id)
-      }
-
-      await supabase.from('reviews').update(updateData).eq('id', reviewId)
-    } else {
-      // Create new interaction
-      await supabase.from('review_interactions').insert({
-        review_id: reviewId,
-        user_id: user.id,
-        is_liked: isLiked,
-        spot_id: spotId,
-      })
-
-      await supabase
-        .from('reviews')
-        .update({
-          like_count: isLiked
-            ? (currentReview.like_count ?? 0) + 1
-            : currentReview.like_count,
-          dislike_count: isLiked
-            ? currentReview.dislike_count
-            : (currentReview.dislike_count ?? 0) + 1,
-        })
-        .eq('id', reviewId)
-    }
-
-    return true
+    const token = await getToken()
+    const endpoint = isLiked ? 'like' : 'dislike'
+    const response = await fetch(`${API_URL}/reviews/${reviewId}/${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    })
+    const data = await response.json()
+    return data
   } catch (error) {
-    console.error('Error in toggleReviewInteraction:', error)
+    console.error('Error toggling review interaction:', error)
     throw error
   }
 }
@@ -400,23 +312,34 @@ export const updateUserProfile = async (userData) => {
 
 export const uploadImage = async (formData) => {
   try {
-    const headers = await getAuthHeaders()
-    // Remove Content-Type from headers as it will be automatically set for FormData
-    delete headers['Content-Type']
-
+    const token = await getToken()
     const response = await fetch(`${API_URL}/upload`, {
       method: 'POST',
-      headers,
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
       body: formData,
     })
-
-    if (!response.ok) {
-      throw new Error('Failed to upload image')
-    }
-
-    return await response.json()
+    const data = await response.json()
+    return data
   } catch (error) {
     console.error('Error uploading image:', error)
+    throw error
+  }
+}
+
+export const getUserReviewInteractions = async (spotId) => {
+  try {
+    const token = await getToken()
+    const response = await fetch(`${API_URL}/reviews/interactions/${spotId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+    const data = await response.json()
+    return data
+  } catch (error) {
+    console.error('Error fetching user review interactions:', error)
     throw error
   }
 }

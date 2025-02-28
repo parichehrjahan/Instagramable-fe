@@ -94,3 +94,44 @@ export const uploadSpotImages = async (files) => {
     throw error
   }
 }
+
+// Function to add multiple predefined spots
+export const addPredefinedSpots = async (spots, onProgress) => {
+  const results = []
+  let completed = 0
+
+  for (const spot of spots) {
+    try {
+      // Create the spot
+      const response = await createSpot({
+        name: spot.name,
+        description: spot.description,
+        location: spot.location,
+        latitude: spot.latitude,
+        longitude: spot.longitude,
+        imageURLs: spot.imageURLs,
+        categories: spot.categories,
+      })
+
+      results.push({
+        success: true,
+        id: response.data,
+        name: spot.name,
+      })
+    } catch (error) {
+      console.error(`Error creating spot ${spot.name}:`, error)
+      results.push({
+        success: false,
+        name: spot.name,
+        error: error.message,
+      })
+    }
+
+    completed++
+    if (onProgress) {
+      onProgress(completed, spots.length)
+    }
+  }
+
+  return results
+}

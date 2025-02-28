@@ -71,9 +71,9 @@ export default function ReviewForm({ spotId, onReviewSubmitted }) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Write a Review</CardTitle>
+    <Card className="border-none shadow-sm">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-lg">Share your experience</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -102,37 +102,39 @@ export default function ReviewForm({ spotId, onReviewSubmitted }) {
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder="Share your experience..."
-            className="min-h-[100px]"
+            className="min-h-[100px] resize-none border-gray-200"
           />
 
-          {/* Image upload section */}
+          {/* Image upload section - Pinterest style */}
           <div className="space-y-2">
             <label className="block text-sm font-medium">Add Photos</label>
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
               {images.map((img, index) => (
-                <div key={index} className="relative">
+                <div key={index} className="relative group">
                   <img
                     src={img.preview}
                     alt={`Preview ${index + 1}`}
-                    className="h-24 w-24 object-cover rounded-lg"
+                    className="w-full aspect-auto object-cover rounded-lg"
                   />
-                  <button
-                    type="button"
-                    onClick={() => removeImage(index)}
-                    className="absolute -top-2 -right-2 p-1 bg-white rounded-full shadow"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
+                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-lg">
+                    <button
+                      type="button"
+                      onClick={() => removeImage(index)}
+                      className="absolute top-1 right-1 p-1 bg-white rounded-full shadow opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
                   <Input
                     type="text"
                     placeholder="Add caption"
                     value={img.caption}
                     onChange={(e) => updateImageCaption(index, e.target.value)}
-                    className="mt-1 text-xs w-24"
+                    className="mt-1 text-xs w-full"
                   />
                 </div>
               ))}
-              <label className="h-24 w-24 border-2 border-dashed rounded-lg flex items-center justify-center cursor-pointer hover:border-gray-400 transition-colors">
+              <label className="border-2 border-dashed rounded-lg flex items-center justify-center cursor-pointer hover:border-gray-400 transition-colors aspect-square">
                 <Input
                   type="file"
                   accept="image/*"
@@ -148,7 +150,7 @@ export default function ReviewForm({ spotId, onReviewSubmitted }) {
           <Button
             type="submit"
             disabled={isSubmitting || !rating || !content.trim()}
-            className="w-full"
+            className="w-full bg-black hover:bg-gray-800 text-white"
           >
             {isSubmitting ? 'Submitting...' : 'Post Review'}
           </Button>
