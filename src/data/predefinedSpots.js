@@ -3,7 +3,7 @@ export const predefinedSpots = {
     {
       name: 'Golden Gate Bridge',
       description:
-        'The iconic suspension bridge spanning the Golden Gate strait. Perfect for sunrise or sunset photos with dramatic fog rolling in.',
+        'Iconic suspension bridge with stunning views of the bay and city skyline. Perfect for sunrise and sunset photography.',
       location: 'Golden Gate Bridge, San Francisco, CA',
       latitude: 37.8199,
       longitude: -122.4783,
@@ -11,52 +11,52 @@ export const predefinedSpots = {
         'https://images.unsplash.com/photo-1501594907352-04cda38ebc29',
         'https://images.unsplash.com/photo-1534050359320-02900022671e',
       ],
-      categoryNames: ['Landmarks', 'Outdoors', 'Scenic Views'],
+      categoryNames: ['Landmarks', 'Scenic Views', 'Outdoors'],
     },
     {
       name: 'Painted Ladies',
       description:
-        'Row of Victorian houses with the city skyline in the background. Best photographed from Alamo Square Park in the late afternoon.',
-      location: 'Painted Ladies, Steiner St, San Francisco, CA',
-      latitude: 37.7762,
-      longitude: -122.4328,
+        'Row of colorful Victorian houses with the city skyline in the background. Best photographed from Alamo Square Park.',
+      location: 'Steiner St & Hayes St, San Francisco, CA 94117',
+      latitude: 37.7759,
+      longitude: -122.4332,
       imageURLs: [
-        'https://images.unsplash.com/photo-1580740135507-ad9259baa604',
-        'https://images.unsplash.com/photo-1523531294919-4bcd7c65e216',
+        'https://images.unsplash.com/photo-1580740135578-6c7f0f988291',
+        'https://images.unsplash.com/photo-1569388330292-79cc1ec67270',
       ],
-      categoryNames: ['Architecture', 'Urban', 'Historic'],
+      categoryNames: ['Architecture', 'Historic', 'Urban'],
     },
     {
       name: 'Palace of Fine Arts',
       description:
-        'Monumental structure with a classical European-inspired dome and colonnades, surrounded by a serene lagoon.',
-      location: 'Palace of Fine Arts, San Francisco, CA',
+        'Beautiful Beaux-Arts monument with a stunning dome and reflecting pool. Popular for wedding and fashion photography.',
+      location: '3601 Lyon St, San Francisco, CA 94123',
       latitude: 37.8029,
       longitude: -122.4484,
       imageURLs: [
-        'https://images.unsplash.com/photo-1549346155-7b5c55586122',
-        'https://images.unsplash.com/photo-1566793474285-2decf0fc182a',
+        'https://images.unsplash.com/photo-1549346155-7b5d5f0e1c3a',
+        'https://images.unsplash.com/photo-1566792066681-6dc1e79b3a0b',
       ],
       categoryNames: ['Architecture', 'Historic', 'Romantic'],
     },
     {
       name: 'Lombard Street',
       description:
-        'The famous crooked street with eight hairpin turns. Capture the winding road from the bottom looking up for the best shots.',
-      location: 'Lombard Street, San Francisco, CA',
+        'Famous winding street with eight hairpin turns and beautiful flower gardens. Great for unique urban photography.',
+      location: 'Lombard St, San Francisco, CA 94133',
       latitude: 37.8021,
       longitude: -122.4186,
       imageURLs: [
-        'https://images.unsplash.com/photo-1551159525-8e8e3a5d7b1f',
-        'https://images.unsplash.com/photo-1571169755078-2916da75cb4a',
+        'https://images.unsplash.com/photo-1551191886-b761cd1aef93',
+        'https://images.unsplash.com/photo-1571169755236-22da7e39d61b',
       ],
-      categoryNames: ['Urban', 'Unique', 'Scenic Views'],
+      categoryNames: ['Urban', 'Unique', 'Architecture'],
     },
     {
       name: 'Twin Peaks',
       description:
-        'Elevated viewpoint offering panoramic vistas of the city and bay. Especially stunning at sunset or during blue hour.',
-      location: 'Twin Peaks, San Francisco, CA',
+        'Elevated viewpoint offering panoramic views of the city and bay. Perfect for sunset and night photography.',
+      location: '501 Twin Peaks Blvd, San Francisco, CA 94114',
       latitude: 37.7544,
       longitude: -122.4477,
       imageURLs: [
@@ -65,14 +65,79 @@ export const predefinedSpots = {
       ],
       categoryNames: ['Scenic Views', 'Outdoors', 'Sunset'],
     },
+    {
+      name: 'Chinatown',
+      description:
+        'Vibrant neighborhood with colorful streets, lanterns, and authentic architecture. Great for street and cultural photography.',
+      location: 'Grant Ave & Bush St, San Francisco, CA 94108',
+      latitude: 37.7941,
+      longitude: -122.4078,
+      imageURLs: [
+        'https://images.unsplash.com/photo-1527838832700-5059252407fa',
+        'https://images.unsplash.com/photo-1579975096649-e773152b04cb',
+      ],
+      categoryNames: ['Urban', 'Cultural', 'Street'],
+    },
+    {
+      name: 'Baker Beach',
+      description:
+        'Beautiful beach with stunning views of the Golden Gate Bridge. Popular for sunset photography and portraits.',
+      location: '1504 Pershing Dr, San Francisco, CA 94129',
+      latitude: 37.7936,
+      longitude: -122.4833,
+      imageURLs: [
+        'https://images.unsplash.com/photo-1534286802268-4a6b61acb7a5',
+        'https://images.unsplash.com/photo-1520450202524-87e5dd06a74b',
+      ],
+      categoryNames: ['Beach', 'Scenic Views', 'Sunset'],
+    },
+    {
+      name: '16th Avenue Tiled Steps',
+      description:
+        'Colorful mosaic stairway with 163 steps featuring a sea-to-stars themed design. Perfect for unique urban photography.',
+      location: '16th Ave & Moraga St, San Francisco, CA 94122',
+      latitude: 37.7564,
+      longitude: -122.473,
+      imageURLs: [
+        'https://images.unsplash.com/photo-1580228549287-8a8969fd50e5',
+        'https://images.unsplash.com/photo-1614287681681-266569309d4f',
+      ],
+      categoryNames: ['Urban', 'Art', 'Unique'],
+    },
+    {
+      name: 'Coit Tower',
+      description:
+        'Historic tower offering 360-degree views of the city and bay. Features beautiful murals inside.',
+      location: '1 Telegraph Hill Blvd, San Francisco, CA 94133',
+      latitude: 37.8025,
+      longitude: -122.4058,
+      imageURLs: [
+        'https://images.unsplash.com/photo-1621551122354-e96737d64b70',
+        'https://images.unsplash.com/photo-1594924571758-ab9e6aa8c6a8',
+      ],
+      categoryNames: ['Landmarks', 'Historic', 'Scenic Views'],
+    },
+    {
+      name: 'Pier 39',
+      description:
+        'Popular tourist destination with shops, restaurants, and sea lion viewing. Great for waterfront and wildlife photography.',
+      location: 'Beach St & The Embarcadero, San Francisco, CA 94133',
+      latitude: 37.8087,
+      longitude: -122.4098,
+      imageURLs: [
+        'https://images.unsplash.com/photo-1569959220744-ff553533f492',
+        'https://images.unsplash.com/photo-1611585347418-a4f9d9b5f059',
+      ],
+      categoryNames: ['Urban', 'Waterfront', 'Tourist'],
+    },
   ],
 
   'New York City': [
     {
       name: 'Brooklyn Bridge',
       description:
-        'Iconic suspension bridge connecting Manhattan and Brooklyn. Walk across for stunning views of the NYC skyline.',
-      location: 'Brooklyn Bridge, New York, NY',
+        'Historic bridge connecting Manhattan and Brooklyn with stunning views of the NYC skyline. Perfect for sunrise photography.',
+      location: 'Brooklyn Bridge, New York, NY 10038',
       latitude: 40.7061,
       longitude: -73.9969,
       imageURLs: [
@@ -84,54 +149,54 @@ export const predefinedSpots = {
     {
       name: 'Top of the Rock',
       description:
-        'Observation deck at Rockefeller Center offering unobstructed views of Central Park and the Empire State Building.',
-      location: 'Top of the Rock, 30 Rockefeller Plaza, New York, NY',
+        'Observation deck offering panoramic views of Manhattan, including the Empire State Building and Central Park.',
+      location: '30 Rockefeller Plaza, New York, NY 10112',
       latitude: 40.7587,
       longitude: -73.9787,
       imageURLs: [
-        'https://images.unsplash.com/photo-1569949247614-5e5c8a8b4ab9',
+        'https://images.unsplash.com/photo-1569264661461-f30e9c57e2d9',
         'https://images.unsplash.com/photo-1522083165195-3424ed129620',
       ],
-      categoryNames: ['Scenic Views', 'Urban', 'Sunset'],
+      categoryNames: ['Scenic Views', 'Urban', 'Skyline'],
     },
     {
-      name: 'DUMBO Manhattan Bridge View',
+      name: 'DUMBO',
       description:
-        'Famous spot in Brooklyn where the Manhattan Bridge frames the Empire State Building perfectly between old brick buildings.',
-      location: 'Washington Street, DUMBO, Brooklyn, NY',
+        'Trendy neighborhood with cobblestone streets and perfect view of the Manhattan Bridge framed by buildings.',
+      location: 'Washington St & Water St, Brooklyn, NY 11201',
       latitude: 40.7033,
       longitude: -73.9894,
       imageURLs: [
-        'https://images.unsplash.com/photo-1588001400947-6385aef4ab0e',
-        'https://images.unsplash.com/photo-1564688057293-ec2a72a18908',
+        'https://images.unsplash.com/photo-1520222984843-df35ebc0f24d',
+        'https://images.unsplash.com/photo-1581373449483-37449f962b6c',
       ],
-      categoryNames: ['Urban', 'Architecture', 'Photography Spots'],
+      categoryNames: ['Urban', 'Street', 'Architecture'],
     },
     {
-      name: 'The Vessel at Hudson Yards',
+      name: 'Central Park',
       description:
-        'Striking honeycomb-like structure with interconnecting staircases offering unique perspectives and photo opportunities.',
-      location: 'The Vessel, Hudson Yards, New York, NY',
+        'Iconic urban park with diverse landscapes, bridges, and seasonal beauty. Perfect for nature and portrait photography.',
+      location: 'Central Park, New York, NY',
+      latitude: 40.7812,
+      longitude: -73.9665,
+      imageURLs: [
+        'https://images.unsplash.com/photo-1534804464090-8fa7e63b6868',
+        'https://images.unsplash.com/photo-1553531384-cc64ac80f931',
+      ],
+      categoryNames: ['Outdoors', 'Nature', 'Urban'],
+    },
+    {
+      name: 'The Vessel',
+      description:
+        'Unique honeycomb-like structure with interconnecting staircases offering various perspectives for photography.',
+      location: '20 Hudson Yards, New York, NY 10001',
       latitude: 40.7538,
       longitude: -74.0022,
       imageURLs: [
-        'https://images.unsplash.com/photo-1553095066-5014bc7b7f2d',
-        'https://images.unsplash.com/photo-1582037928769-181cf6ea7e97',
+        'https://images.unsplash.com/photo-1582555172866-f73bb12a2ab3',
+        'https://images.unsplash.com/photo-1553531580-a0668e7314c5',
       ],
       categoryNames: ['Architecture', 'Modern', 'Unique'],
-    },
-    {
-      name: 'Central Park Mall',
-      description:
-        'Tree-lined promenade in Central Park with beautiful elm trees creating a natural canopy. Gorgeous in all seasons.',
-      location: 'The Mall, Central Park, New York, NY',
-      latitude: 40.7735,
-      longitude: -73.9712,
-      imageURLs: [
-        'https://images.unsplash.com/photo-1568515045052-f9a854d70bfd',
-        'https://images.unsplash.com/photo-1605131545453-1c66c1e1c0d1',
-      ],
-      categoryNames: ['Nature', 'Outdoors', 'Romantic'],
     },
   ],
 
@@ -139,67 +204,67 @@ export const predefinedSpots = {
     {
       name: 'Griffith Observatory',
       description:
-        'Iconic observatory with panoramic views of Los Angeles, the Hollywood Sign, and stunning sunsets.',
-      location: 'Griffith Observatory, Los Angeles, CA',
+        'Iconic observatory with stunning views of Los Angeles and the Hollywood Sign. Perfect for cityscape and night photography.',
+      location: '2800 E Observatory Rd, Los Angeles, CA 90027',
       latitude: 34.1184,
       longitude: -118.3004,
       imageURLs: [
-        'https://images.unsplash.com/photo-1518533954129-7774297db60f',
-        'https://images.unsplash.com/photo-1578159012687-633d1f3f7822',
+        'https://images.unsplash.com/photo-1518533954129-7774297db236',
+        'https://images.unsplash.com/photo-1578159012687-633d1f950655',
       ],
-      categoryNames: ['Scenic Views', 'Architecture', 'Sunset'],
+      categoryNames: ['Landmarks', 'Scenic Views', 'Architecture'],
     },
     {
-      name: 'Venice Canals',
+      name: 'Venice Beach Boardwalk',
       description:
-        'Picturesque man-made canals with charming bridges and beautiful homes. A peaceful escape from the busy Venice Beach.',
-      location: 'Venice Canals, Los Angeles, CA',
-      latitude: 33.9838,
-      longitude: -118.4613,
+        'Vibrant beachfront promenade with street performers, artists, and colorful murals. Great for street and beach photography.',
+      location: 'Ocean Front Walk, Venice, CA 90291',
+      latitude: 33.985,
+      longitude: -118.4695,
       imageURLs: [
-        'https://images.unsplash.com/photo-1581373449483-37449f962b6c',
-        'https://images.unsplash.com/photo-1564644411685-b4c3c0be5bc1',
+        'https://images.unsplash.com/photo-1506190503914-c9c1b9d31763',
+        'https://images.unsplash.com/photo-1568402102990-bc541580b59f',
       ],
-      categoryNames: ['Scenic Views', 'Romantic', 'Unique'],
+      categoryNames: ['Beach', 'Urban', 'Street'],
     },
     {
       name: 'Urban Light at LACMA',
       description:
-        'Art installation featuring 202 restored street lamps. Especially magical at night or during blue hour.',
-      location: 'Urban Light, LACMA, Los Angeles, CA',
+        'Iconic installation of 202 restored street lamps. Popular for portraits and night photography.',
+      location: '5905 Wilshire Blvd, Los Angeles, CA 90036',
       latitude: 34.063,
       longitude: -118.3593,
       imageURLs: [
-        'https://images.unsplash.com/photo-1582126892906-5ba118ead630',
-        'https://images.unsplash.com/photo-1562160376-a1b3a5125083',
+        'https://images.unsplash.com/photo-1582642018074-2f9cb2a1f5f3',
+        'https://images.unsplash.com/photo-1575372587186-5012f8886b4e',
       ],
-      categoryNames: ['Art', 'Urban', 'Night Photography'],
+      categoryNames: ['Art', 'Urban', 'Night'],
+    },
+    {
+      name: 'Hollywood Sign',
+      description:
+        'Famous landmark overlooking Los Angeles. Best photographed from Hollywood Lake Park or Griffith Observatory.',
+      location: 'Hollywood Sign, Los Angeles, CA 90068',
+      latitude: 34.1341,
+      longitude: -118.3215,
+      imageURLs: [
+        'https://images.unsplash.com/photo-1608234807905-4466023792f5',
+        'https://images.unsplash.com/photo-1580655653885-65763b2597d0',
+      ],
+      categoryNames: ['Landmarks', 'Scenic Views', 'Iconic'],
     },
     {
       name: 'The Last Bookstore',
       description:
-        'Quirky bookstore with artistic book displays, including a book tunnel and flying books installation.',
-      location: 'The Last Bookstore, Los Angeles, CA',
+        'Unique bookstore with artistic book displays and tunnels. Perfect for creative indoor photography.',
+      location: '453 S Spring St, Los Angeles, CA 90013',
       latitude: 34.0485,
-      longitude: -118.2513,
+      longitude: -118.2485,
       imageURLs: [
-        'https://images.unsplash.com/photo-1526308182272-d2fe5e5947d8',
-        'https://images.unsplash.com/photo-1551818176-60579e574b91',
+        'https://images.unsplash.com/photo-1601601392622-5d18827fd631',
+        'https://images.unsplash.com/photo-1600431974377-3c51659a4540',
       ],
       categoryNames: ['Indoor', 'Unique', 'Art'],
-    },
-    {
-      name: 'Paul Smith Pink Wall',
-      description:
-        'Bright pink wall that has become a famous Instagram spot. Best photographed in the morning to avoid harsh shadows.',
-      location: 'Paul Smith, Melrose Avenue, Los Angeles, CA',
-      latitude: 34.0841,
-      longitude: -118.3814,
-      imageURLs: [
-        'https://images.unsplash.com/photo-1564644411685-b4c3c0be5bc1',
-        'https://images.unsplash.com/photo-1551818176-60579e574b91',
-      ],
-      categoryNames: ['Urban', 'Colorful', 'Fashion'],
     },
   ],
 

@@ -1,5 +1,16 @@
+import { Routes, Route } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import HomePage from './pages/HomePage'
+import SpotPage from './pages/SpotPage'
+import AddSpotPage from './pages/AddSpotPage'
+import ProfilePage from './pages/ProfilePage'
+import LoginPage from './pages/LoginPage'
+import SignupPage from './pages/SignupPage'
+import { LocationProvider } from './contexts/LocationContext'
 import AddPredefinedSpotsPage from './pages/AddPredefinedSpotsPage'
 import AddSanFranciscoSpotsPage from './pages/AddSanFranciscoSpotsPage'
+
+const queryClient = new QueryClient()
 
 function App() {
   return (
@@ -22,3 +33,5 @@ function App() {
     </QueryClientProvider>
   )
 }
+
+export default App

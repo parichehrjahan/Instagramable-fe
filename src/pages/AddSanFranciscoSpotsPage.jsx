@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Loader2, Check, MapPin, Search, Plus, X } from 'lucide-react'
+import { Loader2, MapPin, Search, Plus, X } from 'lucide-react'
 import { createSpot, getCategories } from '@/services/api'
 import { useQuery } from '@tanstack/react-query'
 import { uploadSpotImages } from '@/lib/utils'
@@ -18,8 +18,6 @@ const sfBounds = {
   east: -122.35, // East boundary (longitude)
   west: -122.52, // West boundary (longitude)
 }
-
-const sfCenter = { lat: 37.7749, lng: -122.4194 }
 
 const AddSanFranciscoSpotsPage = () => {
   const navigate = useNavigate()

@@ -1,169 +1,244 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Loader2, Check, AlertCircle } from 'lucide-react'
-import { Progress } from '@/components/ui/progress'
-import { addPredefinedSpots } from '@/lib/utils'
 import { predefinedSpots } from '@/data/predefinedSpots'
-import { useQuery } from '@tanstack/react-query'
 import { getCategories } from '@/services/api'
+import { useQuery as useAntQuery } from '@tanstack/react-query'
+import {
+  Card as AntCard,
+  Select,
+  Typography,
+  Divider,
+  Row,
+  Col,
+  List,
+  Alert,
+  Progress,
+} from 'antd'
+import {
+  PlusOutlined,
+  CheckCircleOutlined,
+  ExclamationCircleOutlined,
+} from '@ant-design/icons'
+import { addSpotsForCity } from '@/utils/addSpotsScript'
+
+const { Title, Text } = Typography
+const { Option } = Select
 
 const AddPredefinedSpotsPage = () => {
   const navigate = useNavigate()
-  const [selectedCity, setSelectedCity] = useState(null)
+  const [selectedCity, setSelectedCity] = useState('San Francisco')
   const [isAdding, setIsAdding] = useState(false)
   const [progress, setProgress] = useState(0)
-  const [results, setResults] = useState([])
+  const [results, setResults] = useState(null)
 
-  // Fetch categories to map them to the spots
-  const { data: categoriesData } = useQuery({
+  const { data: categories } = useAntQuery({
     queryKey: ['categories'],
     queryFn: getCategories,
   })
 
-  const categories = categoriesData?.data || []
-
-  // Get category IDs by name
   const getCategoryIds = (categoryNames) => {
-    if (!categories.length) return []
+    if (!categories) return []
     return categoryNames
       .map((name) => {
-        const category = categories.find(
-          (c) => c.name.toLowerCase() === name.toLowerCase()
-        )
-        return category?.id
+        const category = categories.find((c) => c.name === name)
+        return category ? category.id : null
       })
-      .filter(Boolean)
+      .filter((id) => id !== null)
   }
 
-  const handleAddSpots = async (city) => {
-    setSelectedCity(city)
+  const handleAddSpots = async () => {
+    if (!selectedCity) return
+
     setIsAdding(true)
     setProgress(0)
-    setResults([])
+    setResults(null)
 
     try {
-      // Map category names to IDs
-      const spotsWithCategoryIds = predefinedSpots[city].map((spot) => ({
+      // Get the spots for the selected city
+      const citySpots = predefinedSpots[selectedCity]
+
+      // Add category IDs to each spot
+      const spotsWithCategoryIds = citySpots.map((spot) => ({
         ...spot,
-        categories: getCategoryIds(spot.categoryNames || []),
+        categoryIds: getCategoryIds(spot.categoryNames || []),
       }))
 
-      const results = await addPredefinedSpots(
-        spotsWithCategoryIds,
-        (completed, total) => {
-          setProgress(Math.floor((completed / total) * 100))
-        }
-      )
+      // Update the predefined spots with the category IDs
+      predefinedSpots[selectedCity] = spotsWithCategoryIds
 
+      // Add the spots
+      const results = await addSpotsForCity(selectedCity)
       setResults(results)
+
+      // Set progress to 100% when done
+      setProgress(100)
     } catch (error) {
-      console.error('Error adding predefined spots:', error)
+      console.error('Error adding spots:', error)
+      setResults({
+        success: [],
+        failed: [{ name: 'Error', error: error.message }],
+      })
     } finally {
       setIsAdding(false)
     }
   }
 
+  const cities = Object.keys(predefinedSpots)
+
   return (
-    <div className="container mx-auto py-8 max-w-4xl">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl">Add Predefined Spots</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="mb-6 text-muted-foreground">
-            Add curated collections of Instagram-worthy spots for different
-            cities.
-          </p>
+    <div className="container mx-auto p-4">
+      <Title level={2}>Add Predefined Spots</Title>
+      <Text>
+        Add curated collections of Instagram-worthy spots for various cities.
+      </Text>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-            {Object.keys(predefinedSpots).map((city) => (
-              <Card
-                key={city}
-                className={`cursor-pointer hover:shadow-md transition-shadow ${
-                  selectedCity === city ? 'ring-2 ring-primary' : ''
-                }`}
-                onClick={() => !isAdding && setSelectedCity(city)}
-              >
-                <CardContent className="p-4">
-                  <h3 className="font-semibold text-lg mb-2">{city}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {predefinedSpots[city].length} spots
-                  </p>
-                  <Button
-                    className="w-full mt-4"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleAddSpots(city)
-                    }}
-                    disabled={isAdding}
-                  >
-                    {isAdding && selectedCity === city ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Adding...
-                      </>
-                    ) : (
-                      'Add Spots'
-                    )}
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+      <Divider />
 
-          {isAdding && (
-            <div className="mb-6">
-              <p className="mb-2">Adding spots for {selectedCity}...</p>
-              <Progress value={progress} className="h-2 mb-4" />
-            </div>
-          )}
+      <AntCard title="San Francisco Explorer" className="mb-6">
+        <Text>
+          Use our specialized San Francisco Explorer to search and add spots
+          from Google Places API.
+        </Text>
+        <div className="mt-4">
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => navigate('/add-sf-spots')}
+          >
+            Open SF Explorer
+          </Button>
+        </div>
+      </AntCard>
 
-          {results.length > 0 && (
-            <div className="border rounded-lg p-4">
-              <h3 className="font-semibold mb-2">Results</h3>
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {results.map((result, index) => (
-                  <div
-                    key={index}
-                    className={`flex items-center p-2 rounded-md ${
-                      result.success ? 'bg-green-50' : 'bg-red-50'
-                    }`}
-                  >
-                    {result.success ? (
-                      <Check className="h-5 w-5 text-green-500 mr-2" />
-                    ) : (
-                      <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
-                    )}
-                    <span>{result.name}</span>
-                    {result.success ? (
-                      <Button
-                        variant="link"
-                        size="sm"
-                        className="ml-auto"
-                        onClick={() => navigate(`/spot/${result.id}`)}
-                      >
-                        View
-                      </Button>
-                    ) : (
-                      <span className="ml-auto text-xs text-red-500">
-                        {result.error}
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="mt-6 flex justify-end">
-            <Button variant="outline" onClick={() => navigate('/')}>
-              Back to Home
+      <AntCard title="Add Predefined Spots" className="mb-6">
+        <div className="mb-4">
+          <Text>
+            Select a city to add its predefined Instagram-worthy spots:
+          </Text>
+          <div className="flex flex-col sm:flex-row gap-4 mt-2">
+            <Select
+              value={selectedCity}
+              onChange={setSelectedCity}
+              style={{ width: 200 }}
+              disabled={isAdding}
+            >
+              {cities.map((city) => (
+                <Option key={city} value={city}>
+                  {city}
+                </Option>
+              ))}
+            </Select>
+            <Button
+              type="primary"
+              onClick={handleAddSpots}
+              loading={isAdding}
+              disabled={!selectedCity}
+            >
+              Add Spots
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+
+        {isAdding && (
+          <div className="mb-4">
+            <Text>Adding spots for {selectedCity}...</Text>
+            <Progress percent={progress} status="active" />
+          </div>
+        )}
+
+        {results && (
+          <div className="mt-4">
+            <Alert
+              message={`Added ${results.success.length} spots successfully. Failed to add ${results.failed.length} spots.`}
+              type={results.failed.length === 0 ? 'success' : 'warning'}
+              showIcon
+              icon={
+                results.failed.length === 0 ? (
+                  <CheckCircleOutlined />
+                ) : (
+                  <ExclamationCircleOutlined />
+                )
+              }
+            />
+
+            {results.success.length > 0 && (
+              <div className="mt-4">
+                <Title level={4}>Successfully Added:</Title>
+                <List
+                  size="small"
+                  bordered
+                  dataSource={results.success}
+                  renderItem={(item) => (
+                    <List.Item>
+                      <CheckCircleOutlined className="text-green-500 mr-2" />{' '}
+                      {item.name}
+                    </List.Item>
+                  )}
+                />
+              </div>
+            )}
+
+            {results.failed.length > 0 && (
+              <div className="mt-4">
+                <Title level={4}>Failed to Add:</Title>
+                <List
+                  size="small"
+                  bordered
+                  dataSource={results.failed}
+                  renderItem={(item) => (
+                    <List.Item>
+                      <ExclamationCircleOutlined className="text-red-500 mr-2" />{' '}
+                      {item.name}: {item.error}
+                    </List.Item>
+                  )}
+                />
+              </div>
+            )}
+          </div>
+        )}
+      </AntCard>
+
+      <Divider />
+
+      <Title level={3}>Available Predefined Spots</Title>
+      <Row gutter={[16, 16]}>
+        {cities.map((city) => {
+          const citySpots = predefinedSpots[city]
+          return (
+            <Col xs={24} sm={12} md={8} lg={6} key={city}>
+              <AntCard
+                title={city}
+                extra={<Text type="secondary">{citySpots.length} spots</Text>}
+                hoverable
+              >
+                <div className="mb-2">
+                  {citySpots.slice(0, 3).map((spot, index) => (
+                    <div key={index} className="mb-1 truncate">
+                      • {spot.name}
+                    </div>
+                  ))}
+                  {citySpots.length > 3 && (
+                    <div>• And {citySpots.length - 3} more...</div>
+                  )}
+                </div>
+                <div className="mt-3">
+                  <Button
+                    type="primary"
+                    size="small"
+                    onClick={() => {
+                      setSelectedCity(city)
+                      window.scrollTo({ top: 0, behavior: 'smooth' })
+                    }}
+                  >
+                    Select
+                  </Button>
+                </div>
+              </AntCard>
+            </Col>
+          )
+        })}
+      </Row>
     </div>
   )
 }
