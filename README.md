@@ -135,3 +135,9 @@ You can find global styles in `src/index.css` and component-specific styles in `
 This project will be hosted on Vercel.
 
 will add more information here soon.
+
+## Hosting
+
+This project will be hosted on Vercel.
+
+will add more information here soon.
