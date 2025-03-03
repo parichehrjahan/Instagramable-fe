@@ -1,8 +1,32 @@
-import { createSpot } from '../services/api.js'
-import { predefinedSpots } from '../data/predefinedSpots.js'
+import fetch from 'node-fetch'
+import { predefinedSpots } from '../src/data/predefinedSpots.js'
+
+const API_URL = 'http://localhost:3000/api'
+
+async function createSpot(spotData) {
+  try {
+    const response = await fetch(`${API_URL}/spots`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(spotData),
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    const data = await response.json()
+    return { success: true, data }
+  } catch (error) {
+    console.error('Error creating spot:', error)
+    throw error
+  }
+}
 
 // Function to add all spots for a specific city
-export async function addSpotsForCity(cityName) {
+async function addSpotsForCity(cityName) {
   if (!predefinedSpots[cityName]) {
     console.error(`No predefined spots found for ${cityName}`)
     return {
@@ -56,7 +80,7 @@ export async function addSpotsForCity(cityName) {
 }
 
 // Function to automatically add all spots for all cities
-export async function addAllSpots() {
+async function addAllSpots() {
   const cities = Object.keys(predefinedSpots)
   const allResults = {
     success: [],
@@ -79,8 +103,21 @@ export async function addAllSpots() {
   return allResults
 }
 
-// Export a function to add spots for San Francisco specifically
-export async function addSanFranciscoSpots() {
-  console.log('Adding San Francisco spots...')
-  return await addSpotsForCity('San Francisco')
+// Run the script
+try {
+  console.log('Starting to add all predefined spots...')
+  const results = await addAllSpots()
+
+  console.log('\nSummary:')
+  console.log(
+    'Successfully added spots:',
+    results.success.map((s) => s.name).join(', ')
+  )
+
+  if (results.failed.length > 0) {
+    console.log('\nFailed spots:')
+    results.failed.forEach((f) => console.log(`${f.name}: ${f.error}`))
+  }
+} catch (error) {
+  console.error('Error running script:', error)
 }
