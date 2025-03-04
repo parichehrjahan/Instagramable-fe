@@ -177,5 +177,19 @@ at async ESMLoader.import (node:internal/modules/esm/loader:385:24)
 
 ```
 
+file:///Users/parsatajik/pari-codes/ig/Instagramable-fe/node_modules/vite/dist/node/chunks/dep-ByPKlqZ5.js:4
+import fsp, { constants as constants$9 } from 'node:fs/promises';
+              ^^^^^^^^^
+SyntaxError: The requested module 'node:fs/promises' does not provide an export named 'constants'
+    at ModuleJob._instantiate (node:internal/modules/esm/module_job:128:21)
+    at async ModuleJob.run (node:internal/modules/esm/module_job:194:5)
+    at async Promise.all (index 0)
+    at async ESMLoader.import (node:internal/modules/esm/loader:385:24)
+```
+
 go to your terminal and run `nvm use`.
+go to your terminal and run `nvm use`.
+
+```
+
 ```
